@@ -65,8 +65,8 @@ export function ChatPanel({ activeCommodity, commodityName, selectedDate }: Prop
   const [error, setError] = useState<string | null>(null);
   const [language, setLanguage] = useState("EN");
   const [showLangPicker, setShowLangPicker] = useState(false);
-  const [latestNews, setLatestNews] = useState<NewsRow[]>([]);
-  const [dateNews, setDateNews] = useState<NewsRow[]>([]);
+  const [stickyNews, setStickyNews] = useState<NewsRow[]>([]);
+  const [stickyLabel, setStickyLabel] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
@@ -75,33 +75,17 @@ export function ChatPanel({ activeCommodity, commodityName, selectedDate }: Prop
   // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, dateNews]);
+  }, [messages]);
 
-  // Load 3 latest news on mount / commodity change
-  useEffect(() => {
-    fetchNews(supabase, activeCommodity, 3).then(setLatestNews);
-    setDateNews([]);
-  }, [activeCommodity]);
-
-  // Load date-specific news when chart point clicked
+  // Load sticky news: date-specific if selected, otherwise 3 latest
   useEffect(() => {
     if (selectedDate) {
-      fetchNewsByDate(supabase, selectedDate, activeCommodity, 5).then((news) => {
-        setDateNews(news);
-        // Add as system message in chat
-        if (news.length > 0) {
-          const dateStr = new Date(selectedDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: `date-${Date.now()}`,
-              role: "system",
-              content: `📅 Showing ${news.length} articles from ${dateStr}`,
-              newsCards: news,
-            },
-          ]);
-        }
-      });
+      const dateStr = new Date(selectedDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      setStickyLabel(`📅 ${dateStr}`);
+      fetchNewsByDate(supabase, selectedDate, activeCommodity, 3).then(setStickyNews);
+    } else {
+      setStickyLabel(null);
+      fetchNews(supabase, activeCommodity, 3).then(setStickyNews);
     }
   }, [selectedDate, activeCommodity]);
 
@@ -273,16 +257,27 @@ export function ChatPanel({ activeCommodity, commodityName, selectedDate }: Prop
         </div>
       )}
 
-      {/* Messages area */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5">
-        {/* Welcome: 3 latest news (only if no messages yet) */}
-        {messages.length === 0 && latestNews.length > 0 && (
+      {/* Sticky news section — doesn't scroll */}
+      {stickyNews.length > 0 && (
+        <div className="shrink-0 border-b border-[#2a2d3a] bg-[#161822] px-4 py-2.5">
+          <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+            {stickyLabel ?? `Latest ${commodityName} News`}
+          </p>
           <div className="space-y-1.5">
-            <p className="text-[10px] font-medium text-gray-600 uppercase tracking-wide">Latest {commodityName} News</p>
-            {latestNews.map((n, i) => (
+            {stickyNews.map((n, i) => (
               <NewsCard key={n.id} news={n} rank={i + 1} />
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Scrollable messages area */}
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5">
+        {/* Empty state */}
+        {messages.length === 0 && (
+          <p className="py-4 text-center text-[10px] text-gray-700 italic">
+            Ask about {commodityName} prices, trends, or news...
+          </p>
         )}
 
         {/* Error */}
@@ -293,30 +288,19 @@ export function ChatPanel({ activeCommodity, commodityName, selectedDate }: Prop
         )}
 
         {/* Messages */}
-        {messages.map((m) => (
-          <div key={m.id}>
-            {m.role === "system" ? (
-              <div className="space-y-1.5">
-                <p className="text-[10px] text-gray-500 text-center">{m.content}</p>
-                {m.newsCards?.map((n, i) => (
-                  <NewsCard key={n.id} news={n} rank={i + 1} />
-                ))}
-              </div>
-            ) : (
-              <div className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div
-                  className={`max-w-[90%] rounded-xl px-3 py-2 text-[11px] leading-relaxed ${
-                    m.role === "user"
-                      ? "bg-[#c9a44a]/20 text-[#e8d5a0]"
-                      : "bg-[#161822] text-gray-300 border border-[#2a2d3a]"
-                  }`}
-                >
-                  {m.content || (
-                    <span className="inline-block animate-pulse text-gray-600">●●●</span>
-                  )}
-                </div>
-              </div>
-            )}
+        {messages.filter((m) => m.role !== "system").map((m) => (
+          <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div
+              className={`max-w-[90%] rounded-xl px-3 py-2 text-[11px] leading-relaxed ${
+                m.role === "user"
+                  ? "bg-[#c9a44a]/20 text-[#e8d5a0]"
+                  : "bg-[#161822] text-gray-300 border border-[#2a2d3a]"
+              }`}
+            >
+              {m.content || (
+                <span className="inline-block animate-pulse text-gray-600">●●●</span>
+              )}
+            </div>
           </div>
         ))}
         <div ref={messagesEndRef} />
