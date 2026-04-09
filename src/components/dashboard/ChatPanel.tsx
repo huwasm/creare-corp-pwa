@@ -54,9 +54,10 @@ type Props = {
   activeCommodity: string;
   commodityName: string;
   selectedDate: string | null;
+  dateClickCount?: number;
 };
 
-export function ChatPanel({ activeCommodity, commodityName, selectedDate }: Props) {
+export function ChatPanel({ activeCommodity, commodityName, selectedDate, dateClickCount }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -78,16 +79,17 @@ export function ChatPanel({ activeCommodity, commodityName, selectedDate }: Prop
   }, [messages]);
 
   // Load sticky news: date-specific if selected, otherwise 3 latest
+  // dateClickCount forces re-fetch even when clicking the same date
   useEffect(() => {
     if (selectedDate) {
-      const dateStr = new Date(selectedDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      const dateStr = new Date(selectedDate).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" });
       setStickyLabel(`📅 ${dateStr}`);
       fetchNewsByDate(supabase, selectedDate, activeCommodity, 3).then(setStickyNews);
     } else {
       setStickyLabel(null);
       fetchNews(supabase, activeCommodity, 3).then(setStickyNews);
     }
-  }, [selectedDate, activeCommodity]);
+  }, [selectedDate, activeCommodity, dateClickCount]);
 
   // New conversation
   function handleNew() {
@@ -352,7 +354,7 @@ function NewsCard({ news, rank }: { news: NewsRow; rank: number }) {
             {sentiment.arrow} {sentiment.label}
           </span>
           <span className="font-mono text-[9px] text-gray-700">
-            {new Date(news.date).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit" })}
+            {new Date(news.date).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" })}
           </span>
         </div>
       </div>

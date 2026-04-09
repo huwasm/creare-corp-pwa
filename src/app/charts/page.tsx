@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { CommodityCards } from "@/components/dashboard/CommodityCards";
@@ -21,6 +21,10 @@ import {
 
 type ViewMode = "cards" | "chart" | "overlay";
 
+const MIN_CHAT_WIDTH = 320;
+const MAX_CHAT_WIDTH = 600;
+const DEFAULT_CHAT_WIDTH = 380;
+
 export default function ChartsPage() {
   const [commodities, setCommodities] = useState<Commodity[]>([]);
   const [activeCommodity, setActiveCommodity] = useState("copper_lme");
@@ -37,8 +41,44 @@ export default function ChartsPage() {
   // 3-column layout state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [dateClickCount, setDateClickCount] = useState(0); // Force re-fetch on same date
+  const [chatWidth, setChatWidth] = useState(DEFAULT_CHAT_WIDTH);
+  const [isResizing, setIsResizing] = useState(false);
 
   const supabase = createClient();
+
+  // Handle date selection — works even if same date clicked again
+  const handleDateSelect = useCallback((date: string) => {
+    setSelectedDate(date);
+    setDateClickCount((c) => c + 1);
+  }, []);
+
+  // Resize handle logic
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    const startX = e.clientX;
+    const startWidth = chatWidth;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const delta = startX - e.clientX;
+      const newWidth = Math.max(MIN_CHAT_WIDTH, Math.min(MAX_CHAT_WIDTH, startWidth + delta));
+      setChatWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  }, [chatWidth]);
 
   // Initial load
   useEffect(() => {
@@ -115,7 +155,7 @@ export default function ChartsPage() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden">
-      {/* Header — full width */}
+      {/* Header */}
       <Header
         commodity={activeCommodity}
         onCommodityChange={(slug) => {
@@ -213,7 +253,7 @@ export default function ChartsPage() {
                   commodity={activeComm}
                   prices={chartPrices}
                   onClose={() => { setViewMode("cards"); setSelectedDate(null); }}
-                  onDateSelect={setSelectedDate}
+                  onDateSelect={handleDateSelect}
                 />
               </>
             )}
@@ -229,6 +269,7 @@ export default function ChartsPage() {
                   commodities={commodities}
                   allPrices={fullPriceData}
                   onClose={() => setViewMode("cards")}
+                  onDateSelect={handleDateSelect}
                 />
               )
             )}
@@ -238,12 +279,24 @@ export default function ChartsPage() {
           </div>
         </main>
 
+        {/* Resize handle */}
+        <div
+          onMouseDown={handleResizeStart}
+          className={`w-1.5 shrink-0 cursor-col-resize bg-[#2a2d3a] transition-colors hover:bg-[#c9a44a] ${
+            isResizing ? "bg-[#c9a44a]" : ""
+          }`}
+        />
+
         {/* Column 3: Right panel — unified chat container */}
-        <aside className="flex w-[380px] shrink-0 flex-col overflow-hidden border-l border-[#2a2d3a] bg-[#0f1117] p-3">
+        <aside
+          className="flex shrink-0 flex-col overflow-hidden bg-[#1a1d28]"
+          style={{ width: chatWidth }}
+        >
           <ChatPanel
             activeCommodity={activeCommodity}
             commodityName={activeComm?.name ?? ""}
             selectedDate={selectedDate}
+            dateClickCount={dateClickCount}
           />
         </aside>
       </div>

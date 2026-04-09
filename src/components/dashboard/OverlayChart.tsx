@@ -26,9 +26,10 @@ type Props = {
   commodities: Commodity[];
   allPrices: Record<string, PriceRow[]>;
   onClose: () => void;
+  onDateSelect?: (date: string) => void;
 };
 
-export function OverlayChart({ commodities, allPrices, onClose }: Props) {
+export function OverlayChart({ commodities, allPrices, onClose, onDateSelect }: Props) {
   const [timeRange, setTimeRange] = useState(90);
   const [viewMode, setViewMode] = useState<ViewMode>("percent");
 
@@ -162,7 +163,7 @@ export function OverlayChart({ commodities, allPrices, onClose }: Props) {
       {/* Chart */}
       <div className="h-[400px] px-5 py-4">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData}>
+          <LineChart data={chartData} onClick={(e: Record<string, unknown>) => { const p = (e?.activePayload as Array<{ payload: { date: string } }>) ?? []; if (p[0]?.payload?.date) onDateSelect?.(p[0].payload.date); }} style={{ cursor: "crosshair" }}>
             <CartesianGrid stroke="#1f2233" vertical={false} />
             <XAxis
               dataKey="label"
