@@ -48,7 +48,12 @@ export function PriceChart({ commodity, prices, onClose }: Props) {
   const chartData = filteredPrices.map((p) => ({
     date: p.date,
     price: p.price,
-    label: new Date(p.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    label:
+      timeRange >= 365
+        ? new Date(p.date).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+        : timeRange >= 90
+          ? new Date(p.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+          : new Date(p.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
   }));
 
   // Show ~8 ticks on x-axis
@@ -144,6 +149,10 @@ export function PriceChart({ commodity, prices, onClose }: Props) {
               <Tooltip
                 contentStyle={{ background: "#252838", border: "1px solid #3a3d4a", borderRadius: 8, fontSize: 12 }}
                 labelStyle={{ color: "#888" }}
+                labelFormatter={(_, payload) => {
+                  const d = payload?.[0]?.payload?.date;
+                  return d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
+                }}
                 formatter={(v) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 })}`, "Price"]}
               />
               <ReferenceLine y={signals.avg} stroke="#3a3d4a" strokeDasharray="4 4" />
@@ -157,6 +166,10 @@ export function PriceChart({ commodity, prices, onClose }: Props) {
               <Tooltip
                 contentStyle={{ background: "#252838", border: "1px solid #3a3d4a", borderRadius: 8, fontSize: 12 }}
                 labelStyle={{ color: "#888" }}
+                labelFormatter={(_, payload) => {
+                  const d = payload?.[0]?.payload?.date;
+                  return d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
+                }}
                 formatter={(v) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 })}`, "Price"]}
               />
               <Bar dataKey="price" fill={commodity.color_hex} opacity={0.8} radius={[2, 2, 0, 0]} isAnimationActive={false} />
@@ -169,6 +182,10 @@ export function PriceChart({ commodity, prices, onClose }: Props) {
               <Tooltip
                 contentStyle={{ background: "#252838", border: "1px solid #3a3d4a", borderRadius: 8, fontSize: 12 }}
                 labelStyle={{ color: "#888" }}
+                labelFormatter={(_, payload) => {
+                  const d = payload?.[0]?.payload?.date;
+                  return d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
+                }}
                 formatter={(v) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 })}`, "Price"]}
               />
               <ReferenceLine y={signals.avg} stroke="#3a3d4a" strokeDasharray="4 4" />
