@@ -289,7 +289,7 @@ export default function ChartsPage() {
 
         {/* Column 3: Right panel — unified chat container */}
         <aside
-          className="flex shrink-0 flex-col overflow-hidden bg-[#1a1d28]"
+          className="flex shrink-0 flex-col overflow-hidden bg-[#0f1117] p-5"
           style={{ width: chatWidth }}
         >
           <ChatPanel
