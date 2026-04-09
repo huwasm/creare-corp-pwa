@@ -29,7 +29,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const MODEL = "gemini-embedding-2-preview";
 const DIMENSIONS = 1536;
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta";
-const EMBED_BATCH = 100; // Gemini max per call
+const EMBED_BATCH = 20; // Smaller batches to stay under RPM limit
 const DB_BATCH = 50; // Insert batch size for Supabase
 const MAX_RETRIES = 3;
 
@@ -245,9 +245,9 @@ async function main() {
         `   ✅ ${embedded}/${toEmbed.length} embedded (${((embedded / toEmbed.length) * 100).toFixed(1)}%)\r`
       );
 
-      // Paid tier: 1500 RPM. Short pause to avoid bursts.
+      // 3K RPM limit, 20 items/batch = 150 batches/min max. Wait 1s to be safe.
       if (i + EMBED_BATCH < toEmbed.length) {
-        const waitSec = 5;
+        const waitSec = 1;
         const remaining = toEmbed.length - embedded;
         const eta = Math.ceil((remaining / EMBED_BATCH) * waitSec / 60);
         process.stdout.write(`\n   ⏳ Waiting ${waitSec}s for rate limit (ETA: ~${eta} min)...`);

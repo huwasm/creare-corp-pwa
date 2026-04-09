@@ -9,6 +9,7 @@ import { OverlayChart } from "@/components/dashboard/OverlayChart";
 import { EventFeed } from "@/components/dashboard/EventFeed";
 import { DateEvents } from "@/components/dashboard/DateEvents";
 import { TopHighlights } from "@/components/dashboard/TopHighlights";
+import { ChatPanel } from "@/components/dashboard/ChatPanel";
 import { createClient } from "@/lib/supabase/client";
 import {
   fetchCommodities,
@@ -255,31 +256,12 @@ export default function ChartsPage() {
           </div>
 
           {/* Bottom: Chat */}
-          <div className="h-[200px] shrink-0 border-t border-[#2a2d3a] flex flex-col">
-            <div className="px-4 py-2">
-              <h3 className="text-xs font-semibold text-white">Chat</h3>
-            </div>
-
-            {/* Messages area */}
-            <div className="flex-1 overflow-y-auto px-4">
-              <p className="text-[10px] text-gray-700 italic">Ask about commodity prices, trends, or news...</p>
-            </div>
-
-            {/* Input */}
-            <div className="flex items-center gap-2 border-t border-[#1f2233] px-3 py-2">
-              <input
-                type="text"
-                placeholder="Ask about this commodity..."
-                disabled
-                className="flex-1 rounded-lg border border-[#3a3d4a] bg-[#252838] px-3 py-1.5 text-xs text-gray-500 outline-none placeholder:text-gray-700"
-              />
-              <button
-                disabled
-                className="rounded-lg bg-[#252838] px-2.5 py-1.5 text-xs text-gray-600"
-              >
-                ↑
-              </button>
-            </div>
+          <div className="h-[280px] shrink-0 border-t border-[#2a2d3a]">
+            <ChatPanel
+              activeCommodity={activeCommodity}
+              commodityName={activeComm?.name ?? ""}
+              selectedDate={selectedDate}
+            />
           </div>
         </aside>
       </div>
