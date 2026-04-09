@@ -41,28 +41,37 @@ export async function fetchPrices(
   slug: string,
   days: number
 ) {
-  const since = new Date();
-  since.setDate(since.getDate() - days);
-
-  const { data } = await supabase
+  let query = supabase
     .from("30100_prices")
     .select("date, commodity_slug, price")
     .eq("commodity_slug", slug)
-    .gte("date", since.toISOString().split("T")[0])
-    .order("date", { ascending: true });
+    .order("date", { ascending: true })
+    .limit(2000);
 
+  if (days < 9999) {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    query = query.gte("date", since.toISOString().split("T")[0]);
+  }
+
+  const { data } = await query;
   return (data ?? []) as PriceRow[];
 }
 
 export async function fetchAllLatestPrices(supabase: SupabaseClient, days: number) {
-  const since = new Date();
-  since.setDate(since.getDate() - days);
-
-  const { data } = await supabase
+  let query = supabase
     .from("30100_prices")
     .select("date, commodity_slug, price")
-    .gte("date", since.toISOString().split("T")[0])
-    .order("date", { ascending: true });
+    .order("date", { ascending: true })
+    .limit(5000);
+
+  if (days < 9999) {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    query = query.gte("date", since.toISOString().split("T")[0]);
+  }
+
+  const { data } = await query;
 
   return (data ?? []) as PriceRow[];
 }
