@@ -2,169 +2,193 @@
 
 import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
+import { CommodityCards } from "@/components/dashboard/CommodityCards";
+import { PriceChart } from "@/components/dashboard/PriceChart";
+import { EventFeed } from "@/components/dashboard/EventFeed";
 import { createClient } from "@/lib/supabase/client";
+import {
+  fetchCommodities,
+  fetchAllLatestPrices,
+  fetchPrices,
+  fetchNews,
+  type Commodity,
+  type PriceRow,
+  type NewsRow,
+} from "@/lib/queries";
 
-type Commodity = {
-  slug: string;
-  name: string;
-  symbol: string;
-  color_hex: string;
-  description: string;
-};
-
-type PriceRow = {
-  date: string;
-  price: number;
-};
+type ViewMode = "cards" | "chart";
 
 export default function Home() {
-  const [commodity, setCommodity] = useState("copper_lme");
-  const [role, setRole] = useState<"trader" | "buyer">("trader");
   const [commodities, setCommodities] = useState<Commodity[]>([]);
-  const [latestPrice, setLatestPrice] = useState<PriceRow | null>(null);
-  const [priceCount, setPriceCount] = useState(0);
-  const [newsCount, setNewsCount] = useState(0);
-  const [connected, setConnected] = useState(false);
+  const [activeCommodity, setActiveCommodity] = useState("copper_lme");
+  const [viewMode, setViewMode] = useState<ViewMode>("cards");
+  const [role, setRole] = useState<"trader" | "buyer">("trader");
+  const [priceData, setPriceData] = useState<Record<string, PriceRow[]>>({});
+  const [chartPrices, setChartPrices] = useState<PriceRow[]>([]);
+  const [news, setNews] = useState<NewsRow[]>([]);
+  const [newsFilter, setNewsFilter] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const supabase = createClient();
 
+  // Initial load
   useEffect(() => {
     async function load() {
-      // Load commodities
-      const { data: comms } = await supabase
-        .from("30000_commodities")
-        .select("slug, name, symbol, color_hex, description")
-        .order("sort_order");
-      if (comms) setCommodities(comms);
+      const [comms, allPrices, articles] = await Promise.all([
+        fetchCommodities(supabase),
+        fetchAllLatestPrices(supabase, 90),
+        fetchNews(supabase, null, 30),
+      ]);
 
-      // Check counts
-      const { count: pc } = await supabase
-        .from("30100_prices")
-        .select("*", { count: "exact", head: true });
-      if (pc) setPriceCount(pc);
+      setCommodities(comms);
+      setNews(articles);
 
-      const { count: nc } = await supabase
-        .from("30200_news")
-        .select("*", { count: "exact", head: true });
-      if (nc) setNewsCount(nc);
+      // Group prices by commodity
+      const grouped: Record<string, PriceRow[]> = {};
+      allPrices.forEach((p) => {
+        if (!grouped[p.commodity_slug]) grouped[p.commodity_slug] = [];
+        grouped[p.commodity_slug].push(p);
+      });
+      setPriceData(grouped);
 
-      setConnected(true);
+      setLoading(false);
     }
     load();
   }, []);
 
+  // Load full price history when switching to chart view or changing commodity
   useEffect(() => {
-    async function loadPrice() {
-      const { data } = await supabase
-        .from("30100_prices")
-        .select("date, price")
-        .eq("commodity_slug", commodity)
-        .order("date", { ascending: false })
-        .limit(1);
-      if (data?.[0]) setLatestPrice(data[0]);
+    if (viewMode === "chart") {
+      fetchPrices(supabase, activeCommodity, 9999).then(setChartPrices);
     }
-    loadPrice();
-  }, [commodity]);
+  }, [viewMode, activeCommodity]);
 
-  const currentComm = commodities.find((c) => c.slug === commodity);
+  // Load filtered news
+  useEffect(() => {
+    fetchNews(supabase, newsFilter, 30).then(setNews);
+  }, [newsFilter]);
+
+  const activeComm = commodities.find((c) => c.slug === activeCommodity);
+
+  function handleCardSelect(slug: string) {
+    setActiveCommodity(slug);
+    setViewMode("chart");
+  }
+
+  if (loading) {
+    return (
+      <>
+        <Header
+          commodity={activeCommodity}
+          onCommodityChange={setActiveCommodity}
+          role={role}
+          onRoleChange={setRole}
+        />
+        <main className="flex flex-1 items-center justify-center">
+          <div className="text-sm text-gray-600">Loading...</div>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>
       <Header
-        commodity={commodity}
-        onCommodityChange={setCommodity}
+        commodity={activeCommodity}
+        onCommodityChange={(slug) => {
+          setActiveCommodity(slug);
+          if (viewMode === "chart") {
+            fetchPrices(supabase, slug, 9999).then(setChartPrices);
+          }
+        }}
         role={role}
         onRoleChange={setRole}
-        lastUpdated={latestPrice?.date}
       />
 
-      <main className="flex-1 px-5 py-8">
-        <div className="mx-auto max-w-[1400px] space-y-8">
-          {/* Connection Status */}
-          <div className="flex items-center gap-3">
-            <span
-              className={`h-3 w-3 rounded-full ${connected ? "bg-green-500" : "bg-red-500"}`}
-            />
-            <span className="text-sm text-gray-500">
-              Supabase {connected ? "Connected" : "Connecting..."}
-            </span>
-            {connected && (
-              <span className="text-xs text-gray-700">
-                {priceCount.toLocaleString()} prices ·{" "}
-                {newsCount.toLocaleString()} articles
-              </span>
-            )}
+      <main className="flex-1 px-5 py-6">
+        <div className="mx-auto max-w-[1400px] space-y-5">
+          {/* Welcome bar + view toggle */}
+          <div className="flex items-center justify-between rounded-[14px] border border-[#2a2d3a] bg-[#1a1d28] px-6 py-4">
+            <div>
+              <h2 className="text-base font-semibold text-white">
+                Welcome Back! What&apos;s your goal today?
+              </h2>
+              <p className="mt-0.5 text-xs text-gray-600">
+                LME Metals Monitor — {new Date().toLocaleDateString("en-GB")}
+              </p>
+            </div>
+            <div className="flex overflow-hidden rounded-lg border border-[#3a3d4a] bg-[#252838]">
+              <button
+                onClick={() => setViewMode("cards")}
+                className={`px-4 py-2 text-xs font-medium transition-colors ${
+                  viewMode === "cards"
+                    ? "bg-[#c9a44a] font-semibold text-[#0f1117]"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                ▦ Overview
+              </button>
+              <button
+                onClick={() => setViewMode("chart")}
+                className={`px-4 py-2 text-xs font-medium transition-colors ${
+                  viewMode === "chart"
+                    ? "bg-[#c9a44a] font-semibold text-[#0f1117]"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                📈 Chart
+              </button>
+            </div>
           </div>
 
-          {/* Current Commodity Card */}
-          {currentComm && latestPrice && (
-            <div className="rounded-2xl border border-[#2a2d3a] bg-[#1a1d28] p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <span
-                      className="flex h-10 w-10 items-center justify-center rounded-lg text-sm font-bold"
-                      style={{
-                        backgroundColor: currentComm.color_hex + "20",
-                        color: currentComm.color_hex,
-                      }}
-                    >
-                      {currentComm.symbol}
-                    </span>
-                    <div>
-                      <h2 className="text-xl font-bold text-white">
-                        {currentComm.name}
-                      </h2>
-                      <p className="text-xs text-gray-500">LME · USD/mt</p>
-                    </div>
-                  </div>
-                  <p className="mt-3 max-w-xl text-sm text-gray-400">
-                    {currentComm.description}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-mono text-3xl font-bold text-white">
-                    $
-                    {Number(latestPrice.price).toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </p>
-                  <p className="mt-1 text-xs text-gray-500">
-                    {latestPrice.date}
-                  </p>
-                </div>
-              </div>
-            </div>
+          {/* Cards View */}
+          {viewMode === "cards" && (
+            <CommodityCards
+              commodities={commodities}
+              priceData={priceData}
+              activeCommodity={activeCommodity}
+              onSelect={handleCardSelect}
+            />
           )}
 
-          {/* Placeholder panels */}
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-            <div className="rounded-2xl border border-[#2a2d3a] bg-[#1a1d28] p-5">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500">
-                Signal Engine
-              </h3>
-              <p className="mt-2 text-xs text-gray-600">
-                Price features, trend, volatility, momentum — coming next
-              </p>
-            </div>
-            <div className="rounded-2xl border border-[#2a2d3a] bg-[#1a1d28] p-5">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500">
-                Threat Ranking
-              </h3>
-              <p className="mt-2 text-xs text-gray-600">
-                News-derived threats, sentiment, global risks — coming next
-              </p>
-            </div>
-            <div className="rounded-2xl border border-[#2a2d3a] bg-[#1a1d28] p-5">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500">
-                Decision Brief
-              </h3>
-              <p className="mt-2 text-xs text-gray-600">
-                BUY / SELL / WAIT — Claude AI analysis — coming next
-              </p>
-            </div>
-          </div>
+          {/* Chart View */}
+          {viewMode === "chart" && activeComm && (
+            <>
+              {/* Mini cards row for switching */}
+              <div className="flex gap-3">
+                {commodities.map((c) => (
+                  <button
+                    key={c.slug}
+                    onClick={() => setActiveCommodity(c.slug)}
+                    className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-xs font-medium transition-colors ${
+                      c.slug === activeCommodity
+                        ? "border-[#c9a44a] bg-[#252838] text-white"
+                        : "border-[#2a2d3a] text-gray-500 hover:border-[#3a3d4a] hover:text-gray-300"
+                    }`}
+                  >
+                    <span
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: c.color_hex }}
+                    />
+                    {c.symbol} — {c.name}
+                  </button>
+                ))}
+              </div>
+
+              <PriceChart
+                commodity={activeComm}
+                prices={chartPrices}
+                onClose={() => setViewMode("cards")}
+              />
+            </>
+          )}
+
+          {/* Event Feed */}
+          <EventFeed
+            news={news}
+            commodityFilter={newsFilter}
+            onFilterChange={setNewsFilter}
+          />
         </div>
       </main>
     </>

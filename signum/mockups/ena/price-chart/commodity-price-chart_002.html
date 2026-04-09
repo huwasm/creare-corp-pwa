@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENA: Commodity Cards + Expanded Chart + Event Feed — Mockup 002</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1117; color: #e0e0e0; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { font-size: 20px; margin-bottom: 6px; color: #fff; }
+        .subtitle { font-size: 13px; color: #888; margin-bottom: 24px; }
+        .section-title { font-size: 12px; font-weight: 600; color: #888; margin: 24px 0 12px; text-transform: uppercase; letter-spacing: 1px; }
+        .section-divider { border: none; border-top: 2px solid #c9a44a; margin: 60px 0 40px; opacity: 0.3; }
+        .view-label { display: inline-block; font-size: 11px; font-weight: 700; padding: 4px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .view-label.desktop { background: rgba(33,150,243,0.15); color: #2196f3; }
+        .view-label.mobile { background: rgba(255,152,0,0.15); color: #ff9800; }
+        .view-label.qa { background: rgba(76,175,80,0.15); color: #4caf50; }
+        .view-label.ref { background: rgba(156,39,176,0.15); color: #ce93d8; }
+
+        /* ============================== */
+        /* Welcome Bar                    */
+        /* ============================== */
+        .welcome-bar { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; background: #1a1d28; border-radius: 14px; border: 1px solid #2a2d3a; margin-bottom: 20px; }
+        .welcome-text h2 { font-size: 16px; color: #fff; font-weight: 600; }
+        .welcome-text p { font-size: 12px; color: #666; margin-top: 2px; }
+        .config-btn { display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: #252838; border: 1px solid #3a3d4a; border-radius: 8px; color: #888; font-size: 12px; cursor: pointer; }
+        .config-btn:hover { border-color: #c9a44a; color: #c9a44a; }
+
+        /* ============================== */
+        /* 3 Commodity Cards              */
+        /* ============================== */
+        .cards-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+        @media (max-width: 900px) { .cards-grid { grid-template-columns: 1fr; } }
+
+        .commodity-card { background: #1a1d28; border-radius: 14px; border: 1px solid #2a2d3a; padding: 20px; cursor: pointer; transition: all 0.2s; position: relative; }
+        .commodity-card:hover { border-color: #3a3d4a; transform: translateY(-2px); }
+        .commodity-card.active { border-color: #c9a44a; box-shadow: 0 0 0 1px #c9a44a33; }
+
+        /* Card Header */
+        .card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .card-identity { display: flex; align-items: center; gap: 10px; }
+        .card-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; font-family: 'SF Mono', monospace; }
+        .card-name { font-size: 15px; font-weight: 600; color: #fff; }
+
+        /* Status Badge */
+        .status-badge { font-size: 10px; font-weight: 700; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .status-badge.buy { background: rgba(76,175,80,0.15); color: #4caf50; border: 1px solid rgba(76,175,80,0.3); }
+        .status-badge.wait { background: rgba(255,193,7,0.15); color: #ffc107; border: 1px solid rgba(255,193,7,0.3); }
+        .status-badge.sell { background: rgba(239,83,80,0.15); color: #ef5350; border: 1px solid rgba(239,83,80,0.3); }
+
+        /* Price Row */
+        .card-price-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+        .card-price-label { font-size: 11px; color: #555; }
+        .card-price-value { font-size: 16px; font-weight: 700; font-family: 'SF Mono', monospace; color: #fff; }
+        .card-price-arrow { font-size: 12px; margin-left: 4px; }
+        .card-price-arrow.up { color: #4caf50; }
+        .card-price-arrow.down { color: #ef5350; }
+        .card-forecast-date { font-size: 11px; color: #444; text-align: right; margin-bottom: 12px; }
+
+        /* Sparkline */
+        .card-sparkline { width: 100%; height: 80px; margin: 12px 0; }
+        .card-sparkline svg { width: 100%; height: 100%; }
+        .spark-line { fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+        .spark-area { opacity: 0.08; }
+        .spark-dot { }
+        .spark-grid { stroke: #1f2233; stroke-width: 0.5; }
+        .spark-label { fill: #444; font-size: 9px; font-family: 'SF Mono', monospace; }
+
+        /* Signal Metrics */
+        .card-signals { background: #161822; border-radius: 10px; padding: 12px 14px; margin-top: 12px; }
+        .signal-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; }
+        .signal-row:not(:last-child) { border-bottom: 1px solid #1f2233; }
+        .signal-label { font-size: 11px; color: #666; display: flex; align-items: center; gap: 4px; }
+        .signal-info { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #3a3d4a; display: inline-flex; align-items: center; justify-content: center; font-size: 8px; color: #555; cursor: help; }
+        .signal-value { font-size: 12px; font-weight: 600; font-family: 'SF Mono', monospace; display: flex; align-items: center; gap: 4px; }
+        .signal-value.up { color: #4caf50; }
+        .signal-value.down { color: #ef5350; }
+        .signal-value.neutral { color: #888; }
+        .signal-arrow { font-size: 10px; }
+
+        /* View Forecast Button */
+        .forecast-btn { display: block; width: 100%; margin-top: 14px; padding: 10px; background: #252838; border: 1px solid #3a3d4a; border-radius: 10px; color: #ccc; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.2s; }
+        .forecast-btn:hover { background: #c9a44a; color: #0f1117; border-color: #c9a44a; }
+
+        /* ============================== */
+        /* Expanded Chart                 */
+        /* ============================== */
+        .expanded-chart { background: #1a1d28; border-radius: 14px; border: 1px solid #c9a44a; margin-bottom: 24px; overflow: hidden; }
+        .expanded-header { padding: 16px 20px 12px; border-bottom: 1px solid #2a2d3a; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+        .expanded-header-left { display: flex; align-items: center; gap: 16px; }
+        .expanded-header-right { display: flex; align-items: center; gap: 12px; }
+        .expanded-title { display: flex; align-items: center; gap: 10px; }
+        .expanded-title .icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; font-family: 'SF Mono', monospace; }
+        .expanded-title .name { font-size: 16px; font-weight: 600; color: #fff; }
+        .expanded-price { font-size: 24px; font-weight: 700; font-family: 'SF Mono', monospace; color: #fff; }
+        .expanded-change { font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 6px; }
+        .expanded-change.up { background: rgba(76,175,80,0.15); color: #4caf50; }
+        .pill-group { display: flex; background: #252838; border-radius: 8px; overflow: hidden; border: 1px solid #3a3d4a; }
+        .pill { padding: 6px 14px; font-size: 12px; cursor: pointer; border: none; background: transparent; color: #666; transition: all 0.2s; font-weight: 500; }
+        .pill.active { background: #c9a44a; color: #0f1117; font-weight: 600; }
+        .time-pills { display: flex; gap: 4px; }
+        .time-pill { padding: 5px 12px; font-size: 11px; cursor: pointer; border: 1px solid #3a3d4a; background: transparent; color: #666; border-radius: 6px; transition: all 0.2s; font-weight: 500; }
+        .time-pill.active { background: #2a2d3a; color: #fff; border-color: #4a4d5a; }
+        .close-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #3a3d4a; background: transparent; color: #666; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .close-btn:hover { border-color: #ef5350; color: #ef5350; }
+
+        .expanded-body { padding: 20px; height: 360px; }
+        .expanded-body svg { width: 100%; height: 100%; }
+        .chart-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .chart-area-fill { opacity: 0.1; }
+        .chart-grid { stroke: #1f2233; stroke-width: 1; }
+        .chart-label { fill: #444; font-size: 11px; font-family: 'SF Mono', monospace; }
+        .chart-crosshair { stroke: #3a3d4a; stroke-width: 1; stroke-dasharray: 4,4; }
+
+        /* Expanded Stats */
+        .expanded-stats { display: flex; gap: 24px; padding: 14px 20px; border-top: 1px solid #2a2d3a; background: #161822; }
+        .stat { display: flex; flex-direction: column; gap: 2px; }
+        .stat-label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+        .stat-value { font-size: 13px; font-weight: 600; font-family: 'SF Mono', monospace; color: #ccc; }
+        .stat-value.up { color: #4caf50; }
+        .stat-value.down { color: #ef5350; }
+
+        /* ============================== */
+        /* Event Feed                     */
+        /* ============================== */
+        .event-feed { background: #1a1d28; border-radius: 14px; border: 1px solid #2a2d3a; overflow: hidden; }
+        .event-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #2a2d3a; }
+        .event-title { font-size: 16px; font-weight: 600; color: #fff; }
+        .event-filters { display: flex; gap: 8px; }
+        .event-filter { display: flex; flex-direction: column; gap: 3px; }
+        .event-filter-label { font-size: 9px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+        .event-filter select { background: #252838; border: 1px solid #3a3d4a; color: #ccc; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; outline: none; }
+
+        /* Table */
+        .event-table { width: 100%; border-collapse: collapse; }
+        .event-table th { text-align: left; padding: 10px 16px; font-size: 11px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #2a2d3a; background: #161822; }
+        .event-table td { padding: 12px 16px; font-size: 12px; border-bottom: 1px solid #1f2233; }
+        .event-table tr:hover { background: #1f2233; }
+        .event-table tr:last-child td { border-bottom: none; }
+
+        /* Material icon */
+        .material-icon { width: 24px; height: 24px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; font-family: 'SF Mono', monospace; }
+
+        /* Source badge */
+        .source-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+
+        /* Event type pill */
+        .event-type { font-size: 10px; padding: 2px 8px; border-radius: 4px; background: #252838; color: #888; display: inline-block; margin: 1px 2px; }
+        .event-type.gain { background: rgba(76,175,80,0.1); color: #4caf50; }
+        .event-type.loss { background: rgba(239,83,80,0.1); color: #ef5350; }
+        .event-type.flat { background: rgba(255,193,7,0.1); color: #ffc107; }
+
+        /* Sentiment */
+        .sentiment { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+        .sentiment-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        /* Breakdown bar */
+        .breakdown-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; width: 120px; }
+        .breakdown-segment { height: 100%; }
+
+        /* Headline */
+        .headline { color: #ccc; max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* ============================== */
+        /* Mobile Cards                   */
+        /* ============================== */
+        .mobile-frame { max-width: 375px; margin: 0 auto; }
+        .mobile-cards { display: flex; flex-direction: column; gap: 12px; }
+        .mobile-card { background: #1a1d28; border-radius: 12px; border: 1px solid #2a2d3a; padding: 14px; }
+        .mobile-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .mobile-card-identity { display: flex; align-items: center; gap: 8px; }
+        .mobile-card-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; font-family: 'SF Mono', monospace; }
+        .mobile-card-name { font-size: 14px; font-weight: 600; color: #fff; }
+        .mobile-card-price { font-size: 18px; font-weight: 700; font-family: 'SF Mono', monospace; color: #fff; }
+        .mobile-card-sparkline { height: 50px; margin: 8px 0; }
+        .mobile-card-sparkline svg { width: 100%; height: 100%; }
+        .mobile-signals { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
+        .mobile-signal { display: flex; justify-content: space-between; font-size: 10px; padding: 3px 0; }
+        .mobile-signal .label { color: #555; }
+        .mobile-signal .value { font-family: 'SF Mono', monospace; font-weight: 600; }
+
+        /* ============================== */
+        /* Q&A                            */
+        /* ============================== */
+        .qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+        @media (max-width: 900px) { .qa-grid { grid-template-columns: 1fr; } }
+        .qa-card { background: #1a1d28; border-radius: 12px; border: 1px solid #2a2d3a; padding: 16px 20px; }
+        .qa-q { font-size: 13px; font-weight: 600; color: #c9a44a; margin-bottom: 8px; }
+        .qa-a { font-size: 12px; color: #888; line-height: 1.6; }
+        code { background: #252838; padding: 1px 6px; border-radius: 4px; font-size: 11px; color: #c9a44a; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>ENA — Commodity Dashboard: Cards + Chart + Event Feed</h1>
+    <p class="subtitle">Mockup 002 — Inspired by pacemaker.ai reference. 3 commodity cards at-a-glance, expandable chart, event feed table.</p>
+
+    <!-- ============================== -->
+    <!-- SECTION 1: Welcome + 3 Cards   -->
+    <!-- ============================== -->
+    <span class="view-label desktop">Desktop — Overview Cards</span>
+
+    <div class="welcome-bar">
+        <div class="welcome-text">
+            <h2>Welcome Back! What's your goal today?</h2>
+            <p>LME Metals Monitor — Last updated 09.04.2026, 15:59 UTC</p>
+        </div>
+        <button class="config-btn">⚙ Configuration</button>
+    </div>
+
+    <div class="cards-grid">
+        <!-- COPPER -->
+        <div class="commodity-card active">
+            <div class="card-top">
+                <div class="card-identity">
+                    <div class="card-icon" style="background: #E8704020; color: #E87040;">Cu</div>
+                    <span class="card-name">Copper</span>
+                </div>
+                <span class="status-badge buy">Buying Zone</span>
+            </div>
+
+            <div class="card-price-row">
+                <span class="card-price-label">LME Price</span>
+                <span class="card-price-value">12,147.01 <span style="font-size: 11px; color: #666;">$/MT</span> <span class="card-price-arrow up">↗</span></span>
+            </div>
+            <div class="card-forecast-date">Forecast Date: 12.05.26</div>
+
+            <div class="card-sparkline">
+                <svg viewBox="0 0 300 80" preserveAspectRatio="none">
+                    <line x1="0" y1="40" x2="300" y2="40" class="spark-grid"/>
+                    <text x="2" y="10" class="spark-label">15d</text>
+                    <text x="75" y="10" class="spark-label">30d</text>
+                    <text x="150" y="10" class="spark-label">45d</text>
+                    <text x="225" y="10" class="spark-label">60d</text>
+                    <text x="270" y="10" class="spark-label">90d</text>
+                    <path d="M0,55 C20,58 40,52 60,48 C80,44 100,50 120,42 C140,38 160,35 180,30 C200,28 220,32 240,25 C260,20 280,18 300,15"
+                          class="spark-line" stroke="#E87040"/>
+                    <path d="M0,55 C20,58 40,52 60,48 C80,44 100,50 120,42 C140,38 160,35 180,30 C200,28 220,32 240,25 C260,20 280,18 300,15 L300,80 L0,80 Z"
+                          fill="#E87040" class="spark-area"/>
+                    <circle cx="300" cy="15" r="3" fill="#E87040"/>
+                </svg>
+            </div>
+
+            <div class="card-signals">
+                <div class="signal-row">
+                    <span class="signal-label">14 day trend <span class="signal-info">i</span></span>
+                    <span class="signal-value up">+ 7.25 % <span class="signal-arrow">↗</span></span>
+                </div>
+                <div class="signal-row">
+                    <span class="signal-label">DMA trend <span class="signal-info">i</span></span>
+                    <span class="signal-value neutral">2/10 days until <span class="signal-arrow">↘</span></span>
+                </div>
+                <div class="signal-row">
+                    <span class="signal-label">Volatility <span class="signal-info">i</span></span>
+                    <span class="signal-value neutral">22.5 % (30d)</span>
+                </div>
+                <div class="signal-row">
+                    <span class="signal-label">Accuracy <span class="signal-info">i</span></span>
+                    <span class="signal-value neutral">4.8 % MAPE (90d)</span>
+                </div>
+            </div>
+
+            <button class="forecast-btn">View forecast →</button>
+        </div>
+
+        <!-- NICKEL -->
+        <div class="commodity-card">
+            <div class="card-top">
+                <div class="card-identity">
+                    <div class="card-icon" style="background: #4CAF5020; color: #4CAF50;">Ni</div>
+                    <span class="card-name">Nickel</span>
+                </div>
+                <span class="status-badge wait">Wait!</span>
+            </div>
+
+            <div class="card-price-row">
+                <span class="card-price-label">LME Price</span>
+                <span class="card-price-value">16,900.00 <span style="font-size: 11px; color: #666;">$/MT</span> <span class="card-price-arrow down">↘</span></span>
+            </div>
+            <div class="card-forecast-date">Forecast Date: 12.05.26</div>
+
+            <div class="card-sparkline">
+                <svg viewBox="0 0 300 80" preserveAspectRatio="none">
+                    <line x1="0" y1="40" x2="300" y2="40" class="spark-grid"/>
+                    <path d="M0,30 C20,28 40,35 60,40 C80,45 100,38 120,32 C140,28 160,25 180,30 C200,35 220,42 240,38 C260,35 280,30 300,32"
+                          class="spark-line" stroke="#4CAF50"/>
+                    <path d="M0,30 C20,28 40,35 60,40 C80,45 100,38 120,32 C140,28 160,25 180,30 C200,35 220,42 240,38 C260,35 280,30 300,32 L300,80 L0,80 Z"
+                          fill="#4CAF50" class="spark-area"/>
+                    <circle cx="300" cy="32" r="3" fill="#4CAF50"/>
+                </svg>
+            </div>
+
+            <div class="card-signals">
+                <div class="signal-row">
+                    <span class="signal-label">14 day trend <span class="signal-info">i</span></span>
+                    <span class="signal-value up">+ 1.5 % <span class="signal-arrow">↗</span></span>
+                </div>
+                <div class="signal-row">
+                    <span class="signal-label">DMA trend <span class="signal-info">i</span></span>
+                    <span class="signal-value neutral">8/10 days until <span class="signal-arrow">↗</span></span>
+                </div>
+                <div class="signal-row">
+                    <span class="signal-label">Volatility <span class="signal-info">i</span></span>
+                    <span class="signal-value neutral">10.0 % (30d)</span>
+                </div>
+                <div class="signal-row">
+                    <span class="signal-label">Accuracy <span class="signal-info">i</span></span>
+                    <span class="signal-value neutral">5.3 % MAPE (90d)</span>
+                </div>
+            </div>
+
+            <button class="forecast-btn">View forecast →</button>
+        </div>
+
+        <!-- ALUMINIUM -->
+        <div class="commodity-card">
+            <div class="card-top">
+                <div class="card-identity">
+                    <div class="card-icon" style="background: #2196F320; color: #2196F3;">Al</div>
+                    <span class="card-name">Aluminium</span>
+                </div>
+                <span class="status-badge sell">Bearish</span>
+            </div>
+
+            <div class="card-price-row">
+                <span class="card-price-label">LME Price</span>
+                <span class="card-price-value">3,505.00 <span style="font-size: 11px; color: #666;">$/MT</span> <span class="card-price-arrow down">↘</span></span>
+            </div>
+            <div class="card-forecast-date">Forecast Date: 12.05.26</div>
+
+            <div class="card-sparkline">
+                <svg viewBox="0 0 300 80" preserveAspectRatio="none">
+                    <line x1="0" y1="40" x2="300" y2="40" class="spark-grid"/>
+                    <path d="M0,20 C20,22 40,28 60,35 C80,40 100,38 120,42 C140,48 160,50 180,55 C200,52 220,48 240,52 C260,55 280,58 300,60"
+                          class="spark-line" stroke="#2196F3"/>
+                    <path d="M0,20 C20,22 40,28 60,35 C80,40 100,38 120,42 C140,48 160,50 180,55 C200,52 220,48 240,52 C260,55 280,58 300,60 L300,80 L0,80 Z"
+                          fill="#2196F3" class="spark-area"/>
+                    <circle cx="300" cy="60" r="3" fill="#2196F3"/>
+                </svg>
+            </div>
+
+            <div class="card-signals">
+                <div class="signal-row">
+                    <span class="signal-label">14 day trend <span class="signal-info">i</span></span>
+                    <span class="signal-value down">- 2.4 % <span class="signal-arrow">↘</span></span>
+                </div>
+                <div class="signal-row">
+                    <span class="signal-label">DMA trend <span class="signal-info">i</span></span>
+                    <span class="signal-value down">0/10 days until <span class="signal-arrow">↘</span></span>
+                </div>
+                <div class="signal-row">
+                    <span class="signal-label">Volatility <span class="signal-info">i</span></span>
+                    <span class="signal-value neutral">23.2 % (30d)</span>
+                </div>
+                <div class="signal-row">
+                    <span class="signal-label">Accuracy <span class="signal-info">i</span></span>
+                    <span class="signal-value neutral">4.6 % MAPE (90d)</span>
+                </div>
+            </div>
+
+            <button class="forecast-btn">View forecast →</button>
+        </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- SECTION 2: Expanded Chart      -->
+    <!-- ============================== -->
+    <span class="view-label desktop">Desktop — Expanded Chart (click card to open)</span>
+
+    <div class="expanded-chart">
+        <div class="expanded-header">
+            <div class="expanded-header-left">
+                <div class="expanded-title">
+                    <div class="icon" style="background: #E8704020; color: #E87040;">Cu</div>
+                    <span class="name">Copper</span>
+                </div>
+                <span class="expanded-price">$12,147.01</span>
+                <span class="expanded-change up">+7.25%</span>
+            </div>
+            <div class="expanded-header-right">
+                <div class="pill-group">
+                    <button class="pill active">Line</button>
+                    <button class="pill">Area</button>
+                    <button class="pill">Candle</button>
+                </div>
+                <div class="time-pills">
+                    <button class="time-pill">7D</button>
+                    <button class="time-pill">30D</button>
+                    <button class="time-pill active">90D</button>
+                    <button class="time-pill">1Y</button>
+                    <button class="time-pill">ALL</button>
+                </div>
+                <button class="close-btn">✕</button>
+            </div>
+        </div>
+
+        <div class="expanded-body">
+            <svg viewBox="0 0 1000 320" preserveAspectRatio="none">
+                <line x1="60" y1="60" x2="960" y2="60" class="chart-grid"/>
+                <line x1="60" y1="130" x2="960" y2="130" class="chart-grid"/>
+                <line x1="60" y1="200" x2="960" y2="200" class="chart-grid"/>
+                <line x1="60" y1="270" x2="960" y2="270" class="chart-grid"/>
+
+                <text x="8" y="64" class="chart-label">$12,500</text>
+                <text x="8" y="134" class="chart-label">$11,500</text>
+                <text x="8" y="204" class="chart-label">$10,500</text>
+                <text x="8" y="274" class="chart-label">$9,500</text>
+
+                <text x="120" y="310" class="chart-label">Jan 10</text>
+                <text x="300" y="310" class="chart-label">Feb 01</text>
+                <text x="480" y="310" class="chart-label">Feb 20</text>
+                <text x="660" y="310" class="chart-label">Mar 10</text>
+                <text x="840" y="310" class="chart-label">Apr 01</text>
+
+                <!-- Copper price line -->
+                <path d="M80,240 C120,235 160,225 200,210 C240,195 280,200 320,185 C360,170 400,160 440,140 C480,125 520,115 560,100 C600,90 640,95 680,110 C720,125 760,105 800,85 C840,75 880,70 920,60 C940,55 960,50 960,48"
+                      class="chart-line" stroke="#E87040"/>
+
+                <path d="M80,240 C120,235 160,225 200,210 C240,195 280,200 320,185 C360,170 400,160 440,140 C480,125 520,115 560,100 C600,90 640,95 680,110 C720,125 760,105 800,85 C840,75 880,70 920,60 C940,55 960,50 960,48 L960,290 L80,290 Z"
+                      fill="#E87040" class="chart-area-fill"/>
+
+                <circle cx="960" cy="48" r="5" fill="#E87040"/>
+                <circle cx="960" cy="48" r="9" fill="none" stroke="#E87040" stroke-width="1.5" opacity="0.3"/>
+
+                <!-- Crosshair example -->
+                <line x1="680" y1="20" x2="680" y2="290" class="chart-crosshair"/>
+                <line x1="60" y1="110" x2="960" y2="110" class="chart-crosshair"/>
+                <circle cx="680" cy="110" r="4" fill="#c9a44a" stroke="#0f1117" stroke-width="2"/>
+
+                <!-- Tooltip -->
+                <rect x="690" y="90" width="120" height="36" rx="6" fill="#252838" stroke="#3a3d4a"/>
+                <text x="700" y="105" fill="#888" font-size="9" font-family="'SF Mono', monospace">Mar 12, 2026</text>
+                <text x="700" y="120" fill="#fff" font-size="12" font-weight="600" font-family="'SF Mono', monospace">$11,340.50</text>
+            </svg>
+        </div>
+
+        <div class="expanded-stats">
+            <div class="stat">
+                <span class="stat-label">Open</span>
+                <span class="stat-value">$11,320.00</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">High (90D)</span>
+                <span class="stat-value up">$12,270.01</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Low (90D)</span>
+                <span class="stat-value down">$8,890.50</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Change</span>
+                <span class="stat-value up">+$827.01 (+7.25%)</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Avg (90D)</span>
+                <span class="stat-value">$10,580.40</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Volatility</span>
+                <span class="stat-value" style="color: #ffc107;">22.5%</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Forecast</span>
+                <span class="stat-value up">$12,800 ↗</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- SECTION 3: Event Feed          -->
+    <!-- ============================== -->
+    <span class="view-label desktop">Desktop — Event Feed</span>
+
+    <div class="event-feed">
+        <div class="event-header">
+            <span class="event-title">Event Feed</span>
+            <div class="event-filters">
+                <div class="event-filter">
+                    <span class="event-filter-label">Material</span>
+                    <select>
+                        <option>All</option>
+                        <option>Copper</option>
+                        <option>Nickel</option>
+                        <option>Aluminium</option>
+                    </select>
+                </div>
+                <div class="event-filter">
+                    <span class="event-filter-label">Event date</span>
+                    <select>
+                        <option>Today</option>
+                        <option>7 days</option>
+                        <option>30 days</option>
+                        <option>All</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <table class="event-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Material</th>
+                    <th>Headline</th>
+                    <th>Source</th>
+                    <th>Event Types</th>
+                    <th>Sentiment</th>
+                    <th>Breakdown</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="color: #666; font-family: 'SF Mono', monospace; font-size: 11px;">09.04.26</td>
+                    <td><span class="material-icon" style="background: #E8704020; color: #E87040;">Cu</span></td>
+                    <td><span class="headline">China copper imports surge to 18-month high on restocking</span></td>
+                    <td><span class="source-badge" style="background: #1a3a5f; color: #60a5fa;">Reuters</span></td>
+                    <td>
+                        <span class="event-type gain">Demand up</span>
+                    </td>
+                    <td>
+                        <div class="sentiment">
+                            <span class="sentiment-dot" style="background: #4caf50;"></span>
+                            <span style="color: #4caf50;">Very positive</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="breakdown-bar">
+                            <div class="breakdown-segment" style="background: #4caf50; width: 60%;"></div>
+                            <div class="breakdown-segment" style="background: #8bc34a; width: 20%;"></div>
+                            <div class="breakdown-segment" style="background: #ffc107; width: 10%;"></div>
+                            <div class="breakdown-segment" style="background: #ef5350; width: 10%;"></div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="color: #666; font-family: 'SF Mono', monospace; font-size: 11px;">09.04.26</td>
+                    <td><span class="material-icon" style="background: #4CAF5020; color: #4CAF50;">Ni</span></td>
+                    <td><span class="headline">Indonesia extends nickel ore export restrictions through 2027</span></td>
+                    <td><span class="source-badge" style="background: #3b2a1a; color: #d4a574;">Bloomberg</span></td>
+                    <td>
+                        <span class="event-type loss">Supply cut</span>
+                    </td>
+                    <td>
+                        <div class="sentiment">
+                            <span class="sentiment-dot" style="background: #ffc107;"></span>
+                            <span style="color: #ffc107;">Neutral</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="breakdown-bar">
+                            <div class="breakdown-segment" style="background: #4caf50; width: 25%;"></div>
+                            <div class="breakdown-segment" style="background: #ffc107; width: 40%;"></div>
+                            <div class="breakdown-segment" style="background: #ff9800; width: 20%;"></div>
+                            <div class="breakdown-segment" style="background: #ef5350; width: 15%;"></div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="color: #666; font-family: 'SF Mono', monospace; font-size: 11px;">09.04.26</td>
+                    <td><span class="material-icon" style="background: #2196F320; color: #2196F3;">Al</span></td>
+                    <td><span class="headline">European aluminium smelters cut output amid energy cost surge</span></td>
+                    <td><span class="source-badge" style="background: #1a3a2e; color: #4ade80;">GDELT</span></td>
+                    <td>
+                        <span class="event-type loss">Supply cut</span>
+                        <span class="event-type flat">Price flat</span>
+                    </td>
+                    <td>
+                        <div class="sentiment">
+                            <span class="sentiment-dot" style="background: #ff9800;"></span>
+                            <span style="color: #ff9800;">Slightly negative</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="breakdown-bar">
+                            <div class="breakdown-segment" style="background: #4caf50; width: 15%;"></div>
+                            <div class="breakdown-segment" style="background: #ffc107; width: 25%;"></div>
+                            <div class="breakdown-segment" style="background: #ff9800; width: 35%;"></div>
+                            <div class="breakdown-segment" style="background: #ef5350; width: 25%;"></div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="color: #666; font-family: 'SF Mono', monospace; font-size: 11px;">08.04.26</td>
+                    <td>
+                        <span class="material-icon" style="background: #E8704020; color: #E87040;">Cu</span>
+                        <span class="material-icon" style="background: #4CAF5020; color: #4CAF50; margin-left: 2px;">Ni</span>
+                    </td>
+                    <td><span class="headline">LME warehouse stocks decline for fifth consecutive week</span></td>
+                    <td><span class="source-badge" style="background: #2a1a3a; color: #c084fc;">Metal.com</span></td>
+                    <td>
+                        <span class="event-type gain">Inventory low</span>
+                    </td>
+                    <td>
+                        <div class="sentiment">
+                            <span class="sentiment-dot" style="background: #8bc34a;"></span>
+                            <span style="color: #8bc34a;">Slightly positive</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="breakdown-bar">
+                            <div class="breakdown-segment" style="background: #4caf50; width: 45%;"></div>
+                            <div class="breakdown-segment" style="background: #8bc34a; width: 30%;"></div>
+                            <div class="breakdown-segment" style="background: #ffc107; width: 15%;"></div>
+                            <div class="breakdown-segment" style="background: #ef5350; width: 10%;"></div>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ============================== -->
+    <!-- MOBILE                         -->
+    <!-- ============================== -->
+    <div style="margin-top: 48px;">
+        <span class="view-label mobile">Mobile — Stacked Cards</span>
+
+        <div class="mobile-frame">
+            <div class="mobile-cards">
+                <!-- Copper mobile -->
+                <div class="mobile-card" style="border-color: #E8704040;">
+                    <div class="mobile-card-top">
+                        <div class="mobile-card-identity">
+                            <div class="mobile-card-icon" style="background: #E8704020; color: #E87040;">Cu</div>
+                            <span class="mobile-card-name">Copper</span>
+                            <span class="status-badge buy" style="font-size: 9px; padding: 2px 8px;">Buy</span>
+                        </div>
+                        <span class="mobile-card-price">$12,147 <span style="font-size: 11px; color: #4caf50;">↗</span></span>
+                    </div>
+                    <div class="mobile-card-sparkline">
+                        <svg viewBox="0 0 300 50" preserveAspectRatio="none">
+                            <path d="M0,35 C30,33 60,28 90,24 C120,20 150,22 180,18 C210,15 240,12 270,8 C290,5 300,4 300,3"
+                                  class="spark-line" stroke="#E87040"/>
+                            <circle cx="300" cy="3" r="2" fill="#E87040"/>
+                        </svg>
+                    </div>
+                    <div class="mobile-signals">
+                        <div class="mobile-signal"><span class="label">14d trend</span><span class="value" style="color: #4caf50;">+7.25%</span></div>
+                        <div class="mobile-signal"><span class="label">Volatility</span><span class="value" style="color: #888;">22.5%</span></div>
+                        <div class="mobile-signal"><span class="label">DMA</span><span class="value" style="color: #888;">2/10d</span></div>
+                        <div class="mobile-signal"><span class="label">MAPE</span><span class="value" style="color: #888;">4.8%</span></div>
+                    </div>
+                </div>
+
+                <!-- Nickel mobile -->
+                <div class="mobile-card">
+                    <div class="mobile-card-top">
+                        <div class="mobile-card-identity">
+                            <div class="mobile-card-icon" style="background: #4CAF5020; color: #4CAF50;">Ni</div>
+                            <span class="mobile-card-name">Nickel</span>
+                            <span class="status-badge wait" style="font-size: 9px; padding: 2px 8px;">Wait</span>
+                        </div>
+                        <span class="mobile-card-price">$16,900 <span style="font-size: 11px; color: #ef5350;">↘</span></span>
+                    </div>
+                    <div class="mobile-card-sparkline">
+                        <svg viewBox="0 0 300 50" preserveAspectRatio="none">
+                            <path d="M0,15 C30,18 60,22 90,28 C120,24 150,20 180,25 C210,30 240,28 270,30 C290,31 300,30 300,30"
+                                  class="spark-line" stroke="#4CAF50"/>
+                            <circle cx="300" cy="30" r="2" fill="#4CAF50"/>
+                        </svg>
+                    </div>
+                    <div class="mobile-signals">
+                        <div class="mobile-signal"><span class="label">14d trend</span><span class="value" style="color: #4caf50;">+1.5%</span></div>
+                        <div class="mobile-signal"><span class="label">Volatility</span><span class="value" style="color: #888;">10.0%</span></div>
+                        <div class="mobile-signal"><span class="label">DMA</span><span class="value" style="color: #888;">8/10d</span></div>
+                        <div class="mobile-signal"><span class="label">MAPE</span><span class="value" style="color: #888;">5.3%</span></div>
+                    </div>
+                </div>
+
+                <!-- Aluminium mobile -->
+                <div class="mobile-card">
+                    <div class="mobile-card-top">
+                        <div class="mobile-card-identity">
+                            <div class="mobile-card-icon" style="background: #2196F320; color: #2196F3;">Al</div>
+                            <span class="mobile-card-name">Aluminium</span>
+                            <span class="status-badge sell" style="font-size: 9px; padding: 2px 8px;">Bear</span>
+                        </div>
+                        <span class="mobile-card-price">$3,505 <span style="font-size: 11px; color: #ef5350;">↘</span></span>
+                    </div>
+                    <div class="mobile-card-sparkline">
+                        <svg viewBox="0 0 300 50" preserveAspectRatio="none">
+                            <path d="M0,10 C30,12 60,18 90,22 C120,26 150,28 180,32 C210,30 240,34 270,38 C290,40 300,42 300,42"
+                                  class="spark-line" stroke="#2196F3"/>
+                            <circle cx="300" cy="42" r="2" fill="#2196F3"/>
+                        </svg>
+                    </div>
+                    <div class="mobile-signals">
+                        <div class="mobile-signal"><span class="label">14d trend</span><span class="value" style="color: #ef5350;">-2.4%</span></div>
+                        <div class="mobile-signal"><span class="label">Volatility</span><span class="value" style="color: #888;">23.2%</span></div>
+                        <div class="mobile-signal"><span class="label">DMA</span><span class="value" style="color: #888;">0/10d</span></div>
+                        <div class="mobile-signal"><span class="label">MAPE</span><span class="value" style="color: #888;">4.6%</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- Q&A                            -->
+    <!-- ============================== -->
+    <hr class="section-divider">
+    <span class="view-label qa">Design Decisions</span>
+    <p class="section-title">Q&A</p>
+
+    <div class="qa-grid">
+        <div class="qa-card">
+            <p class="qa-q">Why 3 cards side-by-side instead of one chart with tabs?</p>
+            <p class="qa-a">Instant overview. Judges see all 3 commodities at a glance — Buying Zone / Wait / Bearish. No clicks needed. This is the pacemaker.ai pattern: show the answer first, let users drill into detail.</p>
+        </div>
+        <div class="qa-card">
+            <p class="qa-q">What do the signal metrics mean?</p>
+            <p class="qa-a"><strong>14d trend</strong>: % price change over 14 days. <strong>DMA trend</strong>: days until moving average crossover (buy/sell signal). <strong>Volatility</strong>: 30-day coefficient of variation. <strong>Accuracy (MAPE)</strong>: mean absolute percentage error of the forecast model over 90 days.</p>
+        </div>
+        <div class="qa-card">
+            <p class="qa-q">How does the expanded chart work?</p>
+            <p class="qa-a">Click any card → it expands into a full chart below the cards row. Gold border shows which card is selected. Close button (✕) collapses it. Chart has Line/Area/Candle pills + time range + crosshair tooltip + stats row.</p>
+        </div>
+        <div class="qa-card">
+            <p class="qa-q">What is the Event Feed?</p>
+            <p class="qa-a">News table from <code>30200_news</code>. Columns: Date, Material (icon), Headline, Source (badge), Event Types (gain/loss/flat pills), Sentiment (dot + label), Breakdown (stacked color bar showing sentiment distribution). Filterable by material and date range.</p>
+        </div>
+        <div class="qa-card">
+            <p class="qa-q">What is the Breakdown bar?</p>
+            <p class="qa-a">A stacked horizontal bar showing sentiment distribution: green (positive) → yellow (neutral) → orange (slightly negative) → red (negative). Computed from the news summary using keyword-based sentiment scoring. Quick visual scan without reading numbers.</p>
+        </div>
+        <div class="qa-card">
+            <p class="qa-q">What data feeds each section?</p>
+            <p class="qa-a"><strong>Cards</strong>: Latest price from <code>30100_prices</code> + computed signals (trend, volatility, DMA from price history). <strong>Chart</strong>: Full price series filtered by date range. <strong>Event Feed</strong>: <code>30200_news</code> with sentiment + event type classification added by the Signal Engine.</p>
+        </div>
+    </div>
+</div>
+</body>
+</html>

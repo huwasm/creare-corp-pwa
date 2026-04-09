@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENA: Commodity Signal Intelligence Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1117; color: #e0e0e0; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { font-size: 20px; margin-bottom: 6px; color: #fff; }
+        .subtitle { font-size: 13px; color: #888; margin-bottom: 24px; }
+        .section-title { font-size: 12px; font-weight: 600; color: #888; margin: 24px 0 12px; text-transform: uppercase; letter-spacing: 1px; }
+        .section-divider { border: none; border-top: 2px solid #c9a44a; margin: 60px 0 40px; opacity: 0.3; }
+        .view-label { display: inline-block; font-size: 11px; font-weight: 700; padding: 4px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .view-label.desktop { background: rgba(33,150,243,0.15); color: #2196f3; }
+        .view-label.mobile { background: rgba(255,152,0,0.15); color: #ff9800; }
+        .view-label.plan { background: rgba(156,39,176,0.15); color: #ce93d8; }
+
+        /* Top bar */
+        .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; padding: 12px 20px; background: #1a1d28; border-radius: 12px; border: 1px solid #2a2d3a; flex-wrap: wrap; gap: 12px; }
+        .top-bar-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .commodity-select { background: #252838; border: 1px solid #3a3d4a; color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 14px; cursor: pointer; }
+        .commodity-select option { background: #252838; }
+        .role-toggle { display: flex; background: #252838; border-radius: 8px; overflow: hidden; border: 1px solid #3a3d4a; }
+        .role-btn { padding: 8px 20px; font-size: 13px; cursor: pointer; border: none; background: transparent; color: #888; transition: all 0.2s; }
+        .role-btn.active { background: #c9a44a; color: #0f1117; font-weight: 600; }
+        .refresh-time { font-size: 12px; color: #555; }
+
+        /* Grid layout */
+        .dashboard-grid { display: grid; grid-template-columns: 340px 1fr 400px; gap: 20px; }
+        @media (max-width: 1200px) { .dashboard-grid { grid-template-columns: 1fr; } }
+
+        /* Panels */
+        .panel { background: #1a1d28; border-radius: 14px; border: 1px solid #2a2d3a; overflow: hidden; }
+        .panel-header { padding: 16px 20px 12px; border-bottom: 1px solid #2a2d3a; display: flex; align-items: center; justify-content: space-between; }
+        .panel-title { font-size: 14px; font-weight: 600; color: #fff; }
+        .panel-badge { font-size: 10px; font-weight: 600; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .panel-body { padding: 16px 20px; }
+        .panel-sub-header { font-size: 11px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px; padding-top: 12px; border-top: 1px solid #1f2233; }
+        .panel-sub-header:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+
+        /* Signal Engine — Price Features */
+        .metric-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #1f2233; }
+        .metric-row:last-child { border-bottom: none; }
+        .metric-label { font-size: 13px; color: #888; }
+        .metric-value { font-size: 14px; font-weight: 600; font-family: 'SF Mono', 'Fira Code', monospace; }
+        .metric-value.up { color: #4caf50; }
+        .metric-value.down { color: #ef5350; }
+        .metric-value.neutral { color: #ffc107; }
+
+        .regime-pill { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .regime-pill.bullish { background: rgba(76,175,80,0.15); color: #4caf50; border: 1px solid rgba(76,175,80,0.3); }
+        .regime-pill.volatile { background: rgba(255,193,7,0.15); color: #ffc107; border: 1px solid rgba(255,193,7,0.3); }
+
+        /* Price chart */
+        .chart-area { background: #12141c; border-radius: 10px; height: 200px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; position: relative; overflow: hidden; }
+        .chart-line { position: absolute; bottom: 40px; left: 20px; right: 20px; height: 100px; }
+        .chart-line svg { width: 100%; height: 100%; }
+        .chart-label { position: absolute; top: 10px; left: 14px; font-size: 11px; color: #555; }
+        .chart-price { position: absolute; top: 10px; right: 14px; font-size: 16px; font-weight: 700; color: #4caf50; }
+        .event-marker { position: absolute; width: 8px; height: 8px; background: #ef5350; border-radius: 50%; border: 2px solid #0f1117; cursor: pointer; }
+        .event-marker.positive { background: #4caf50; }
+        .event-marker-tooltip { display: none; position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); background: #252838; border: 1px solid #3a3d4a; border-radius: 6px; padding: 6px 10px; font-size: 11px; color: #ccc; white-space: nowrap; z-index: 10; }
+        .event-marker:hover .event-marker-tooltip { display: block; }
+
+        /* Forecast section */
+        .forecast-box { background: #12141c; border-radius: 10px; padding: 14px; margin-top: 4px; }
+        .forecast-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; }
+        .forecast-label { font-size: 12px; color: #666; }
+        .forecast-value { font-size: 13px; font-weight: 600; font-family: 'SF Mono', 'Fira Code', monospace; }
+        .forecast-range { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+        .forecast-range-bar { flex: 1; height: 6px; background: #1f2233; border-radius: 3px; position: relative; overflow: hidden; }
+        .forecast-range-fill { position: absolute; height: 100%; border-radius: 3px; }
+        .forecast-range-marker { position: absolute; width: 3px; height: 12px; background: #fff; border-radius: 2px; top: -3px; }
+
+        /* News Sentiment */
+        .sentiment-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 12px 0 8px; }
+        .sentiment-bar .pos { background: #4caf50; }
+        .sentiment-bar .neu { background: #555; }
+        .sentiment-bar .neg { background: #ef5350; }
+        .sentiment-legend { display: flex; gap: 16px; margin-bottom: 16px; }
+        .sentiment-legend span { font-size: 11px; color: #888; display: flex; align-items: center; gap: 4px; }
+        .sentiment-legend .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        /* Threat ranking */
+        .threat-list { margin: 12px 0 16px; }
+        .threat-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #12141c; border-radius: 8px; margin-bottom: 6px; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; }
+        .threat-item:hover { border-color: #3a3d4a; background: #1a1d28; }
+        .threat-item.expanded { border-color: #3a3d4a; }
+        .threat-rank { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+        .threat-rank.critical { background: rgba(239,83,80,0.2); color: #ef5350; }
+        .threat-rank.high { background: rgba(255,152,0,0.2); color: #ff9800; }
+        .threat-rank.medium { background: rgba(255,193,7,0.2); color: #ffc107; }
+        .threat-rank.low { background: rgba(76,175,80,0.2); color: #4caf50; }
+        .threat-info { flex: 1; min-width: 0; }
+        .threat-title { font-size: 13px; color: #ccc; font-weight: 500; }
+        .threat-impact { font-size: 11px; color: #666; margin-top: 2px; }
+        .threat-severity { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; flex-shrink: 0; }
+        .threat-severity.critical { background: rgba(239,83,80,0.15); color: #ef5350; }
+        .threat-severity.high { background: rgba(255,152,0,0.15); color: #ff9800; }
+        .threat-severity.medium { background: rgba(255,193,7,0.15); color: #ffc107; }
+        .threat-expand { display: none; padding: 10px 12px 4px 48px; font-size: 12px; color: #888; line-height: 1.6; }
+        .threat-item.expanded + .threat-expand { display: block; }
+
+        .news-item { padding: 10px 0; border-bottom: 1px solid #1f2233; cursor: pointer; transition: background 0.15s; }
+        .news-item:hover { background: rgba(255,255,255,0.02); }
+        .news-item:last-child { border-bottom: none; }
+        .news-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .news-category { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
+        .news-category.supply { background: rgba(239,83,80,0.15); color: #ef5350; }
+        .news-category.demand { background: rgba(76,175,80,0.15); color: #4caf50; }
+        .news-category.macro { background: rgba(33,150,243,0.15); color: #2196f3; }
+        .news-category.geopolitics { background: rgba(255,152,0,0.15); color: #ff9800; }
+        .news-category.energy { background: rgba(156,39,176,0.15); color: #ce93d8; }
+        .news-category.policy { background: rgba(0,188,212,0.15); color: #00bcd4; }
+        .news-sentiment-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .news-sentiment-dot.pos { background: #4caf50; }
+        .news-sentiment-dot.neg { background: #ef5350; }
+        .news-sentiment-dot.neu { background: #555; }
+        .news-importance { font-size: 10px; color: #555; }
+        .news-title { font-size: 13px; color: #ccc; line-height: 1.4; }
+        .news-time { font-size: 11px; color: #444; margin-top: 4px; }
+        .news-detail { display: none; padding: 8px 0 4px; font-size: 12px; color: #666; line-height: 1.5; border-top: 1px dashed #1f2233; margin-top: 8px; }
+        .news-item.open .news-detail { display: block; }
+
+        /* Decision Brief */
+        .brief-section { margin-bottom: 16px; }
+        .brief-label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .brief-text { font-size: 13px; color: #ccc; line-height: 1.6; }
+        .brief-drivers { display: flex; flex-wrap: wrap; gap: 6px; }
+        .driver-chip { font-size: 12px; background: #252838; border: 1px solid #3a3d4a; padding: 4px 12px; border-radius: 20px; color: #bbb; }
+
+        .scenario-cards { display: flex; flex-direction: column; gap: 8px; }
+        .scenario-card { padding: 10px 14px; border-radius: 10px; border-left: 3px solid; }
+        .scenario-card.bull { background: rgba(76,175,80,0.08); border-left-color: #4caf50; }
+        .scenario-card.base { background: rgba(255,193,7,0.08); border-left-color: #ffc107; }
+        .scenario-card.bear { background: rgba(239,83,80,0.08); border-left-color: #ef5350; }
+        .scenario-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .scenario-card.bull .scenario-label { color: #4caf50; }
+        .scenario-card.base .scenario-label { color: #ffc107; }
+        .scenario-card.bear .scenario-label { color: #ef5350; }
+        .scenario-text { font-size: 12px; color: #999; line-height: 1.5; }
+
+        /* BIG decision box */
+        .decision-box { border-radius: 14px; padding: 20px; margin-top: 16px; text-align: center; position: relative; overflow: hidden; }
+        .decision-box.buy { background: linear-gradient(135deg, rgba(76,175,80,0.15), rgba(76,175,80,0.05)); border: 2px solid rgba(76,175,80,0.4); }
+        .decision-box.sell { background: linear-gradient(135deg, rgba(239,83,80,0.15), rgba(239,83,80,0.05)); border: 2px solid rgba(239,83,80,0.4); }
+        .decision-box.wait { background: linear-gradient(135deg, rgba(255,193,7,0.15), rgba(255,193,7,0.05)); border: 2px solid rgba(255,193,7,0.4); }
+        .decision-signal { font-size: 28px; font-weight: 800; letter-spacing: 2px; margin-bottom: 4px; }
+        .decision-box.buy .decision-signal { color: #4caf50; }
+        .decision-box.sell .decision-signal { color: #ef5350; }
+        .decision-box.wait .decision-signal { color: #ffc107; }
+        .decision-subtitle { font-size: 13px; color: #999; margin-bottom: 12px; }
+        .decision-details { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; text-align: center; }
+        .decision-detail { background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px 8px; }
+        .decision-detail-label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .decision-detail-value { font-size: 15px; font-weight: 700; font-family: 'SF Mono', 'Fira Code', monospace; }
+
+        /* Risk matrix */
+        .risk-matrix { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+        .risk-item { background: #12141c; border-radius: 8px; padding: 10px 12px; }
+        .risk-item-label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 4px; }
+        .risk-item-value { font-size: 13px; font-weight: 600; }
+        .risk-item-value.high { color: #ef5350; }
+        .risk-item-value.medium { color: #ff9800; }
+        .risk-item-value.low { color: #4caf50; }
+
+        .confidence-bar-wrap { display: flex; align-items: center; gap: 8px; margin-top: 12px; justify-content: center; }
+        .confidence-bar { width: 120px; height: 6px; background: #252838; border-radius: 3px; overflow: hidden; }
+        .confidence-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #c9a44a, #e8d48a); }
+        .confidence-label { font-size: 13px; color: #c9a44a; font-weight: 700; }
+
+        /* Notes / Q&A */
+        .note { background: rgba(33,150,243,0.08); border-left: 4px solid #2196f3; padding: 12px 16px; margin: 20px 0; font-size: 13px; color: #90caf9; border-radius: 0 8px 8px 0; }
+        .note.warning { background: rgba(255,193,7,0.08); border-left-color: #ffc107; color: #ffe082; }
+        .note.success { background: rgba(76,175,80,0.08); border-left-color: #4caf50; color: #a5d6a7; }
+
+        .questions { background: #1a1d28; border-radius: 14px; padding: 20px; margin-top: 30px; border: 1px solid #2a2d3a; }
+        .question { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #1f2233; }
+        .question:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+        .question-title { font-size: 14px; font-weight: 600; color: #ccc; margin-bottom: 6px; }
+        .question-answer { font-size: 13px; color: #888; line-height: 1.6; }
+        .yes { color: #4caf50; font-weight: 600; }
+        .future { color: #2196f3; font-weight: 600; }
+
+        /* Architecture diagram */
+        .arch-diagram { background: #12141c; border-radius: 10px; padding: 20px; margin: 16px 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; color: #666; line-height: 2; white-space: pre; overflow-x: auto; }
+        .arch-diagram .layer { color: #c9a44a; }
+        .arch-diagram .arrow { color: #444; }
+        .arch-diagram .component { color: #888; }
+
+        /* ===== MOBILE PWA MOCKUP ===== */
+        .mobile-frame { width: 375px; min-height: 812px; background: #0f1117; border-radius: 40px; border: 3px solid #333; margin: 0 auto; padding: 50px 0 34px; position: relative; overflow: hidden; }
+        .mobile-notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 160px; height: 34px; background: #000; border-radius: 0 0 20px 20px; z-index: 10; }
+        .mobile-status-bar { display: flex; justify-content: space-between; align-items: center; padding: 6px 24px; font-size: 12px; font-weight: 600; color: #fff; }
+        .mobile-home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; background: #fff; border-radius: 3px; opacity: 0.3; }
+        .mobile-content { padding: 0 16px; overflow-y: auto; }
+
+        /* Mobile top bar */
+        .m-top-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 16px; }
+        .m-commodity { font-size: 18px; font-weight: 700; color: #fff; }
+        .m-regime { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 12px; }
+        .m-role-toggle { display: flex; background: #252838; border-radius: 8px; overflow: hidden; border: 1px solid #3a3d4a; margin-bottom: 16px; }
+        .m-role-btn { flex: 1; padding: 8px; font-size: 12px; text-align: center; cursor: pointer; border: none; background: transparent; color: #888; }
+        .m-role-btn.active { background: #c9a44a; color: #0f1117; font-weight: 600; }
+
+        /* Mobile tabs */
+        .m-tabs { display: flex; gap: 0; background: #1a1d28; border-radius: 10px; margin-bottom: 16px; overflow: hidden; border: 1px solid #2a2d3a; }
+        .m-tab { flex: 1; padding: 10px 4px; text-align: center; font-size: 11px; font-weight: 600; color: #666; cursor: pointer; border-bottom: 2px solid transparent; }
+        .m-tab.active { color: #c9a44a; border-bottom-color: #c9a44a; background: rgba(201,164,74,0.08); }
+
+        /* Mobile panels */
+        .m-panel { background: #1a1d28; border-radius: 12px; border: 1px solid #2a2d3a; margin-bottom: 12px; overflow: hidden; }
+        .m-panel-header { padding: 12px 14px 8px; font-size: 12px; font-weight: 600; color: #fff; border-bottom: 1px solid #2a2d3a; display: flex; justify-content: space-between; align-items: center; }
+        .m-panel-body { padding: 12px 14px; }
+
+        /* Mobile chart */
+        .m-chart { background: #12141c; border-radius: 8px; height: 140px; position: relative; overflow: hidden; margin-bottom: 12px; }
+
+        /* Mobile metric */
+        .m-metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .m-metric { background: #12141c; border-radius: 8px; padding: 10px; }
+        .m-metric-label { font-size: 10px; color: #666; margin-bottom: 4px; }
+        .m-metric-value { font-size: 14px; font-weight: 700; font-family: 'SF Mono', 'Fira Code', monospace; }
+
+        /* Mobile decision */
+        .m-decision { text-align: center; padding: 20px 16px; }
+        .m-decision-signal { font-size: 32px; font-weight: 800; letter-spacing: 3px; }
+        .m-decision-reason { font-size: 13px; color: #999; margin-top: 6px; line-height: 1.5; }
+        .m-decision-row { display: flex; justify-content: space-around; margin-top: 14px; }
+        .m-decision-stat { text-align: center; }
+        .m-decision-stat-label { font-size: 9px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+        .m-decision-stat-value { font-size: 15px; font-weight: 700; margin-top: 2px; }
+
+        /* Mobile threat */
+        .m-threat { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #1f2233; }
+        .m-threat:last-child { border-bottom: none; }
+        .m-threat-rank { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+        .m-threat-text { font-size: 12px; color: #ccc; flex: 1; }
+        .m-threat-badge { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 3px; text-transform: uppercase; }
+
+        /* Mobile bottom nav */
+        .m-bottom-nav { display: flex; justify-content: space-around; padding: 10px 0 4px; border-top: 1px solid #2a2d3a; background: #1a1d28; margin: 0 -16px; }
+        .m-nav-item { text-align: center; font-size: 10px; color: #555; }
+        .m-nav-item.active { color: #c9a44a; }
+        .m-nav-icon { font-size: 18px; margin-bottom: 2px; }
+
+        /* Mobile side-by-side */
+        .mobile-side-by-side { display: flex; gap: 30px; justify-content: center; flex-wrap: wrap; align-items: flex-start; }
+
+        /* ===== IMPLEMENTATION PLAN ===== */
+        .plan-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+        @media (max-width: 900px) { .plan-grid { grid-template-columns: 1fr; } }
+        .plan-card { background: #1a1d28; border-radius: 12px; border: 1px solid #2a2d3a; overflow: hidden; }
+        .plan-card-header { padding: 14px 16px; border-bottom: 1px solid #2a2d3a; display: flex; align-items: center; gap: 10px; }
+        .plan-card-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        .plan-card-title { font-size: 13px; font-weight: 600; color: #fff; }
+        .plan-card-body { padding: 14px 16px; }
+        .plan-item { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; font-size: 12px; color: #999; }
+        .plan-item code { background: #252838; padding: 1px 6px; border-radius: 4px; font-size: 11px; color: #c9a44a; font-family: 'SF Mono', 'Fira Code', monospace; }
+        .plan-check { color: #4caf50; flex-shrink: 0; font-size: 11px; margin-top: 1px; }
+
+        .timeline-bar { display: flex; gap: 0; margin: 20px 0; border-radius: 8px; overflow: hidden; height: 32px; }
+        .timeline-block { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- ============================================ -->
+        <!-- SECTION 1: DESKTOP PWA                       -->
+        <!-- ============================================ -->
+        <span class="view-label desktop">Desktop PWA</span>
+        <h1>Commodity Signal Intelligence</h1>
+        <p class="subtitle">Hackathon Architecture | Signal Engine + Threat Ranking + Decision Brief</p>
+
+        <!-- TOP BAR -->
+        <div class="top-bar">
+            <div class="top-bar-left">
+                <select class="commodity-select">
+                    <option>Copper (HG=F)</option>
+                    <option>Gold (GC=F)</option>
+                    <option>Crude Oil (CL=F)</option>
+                    <option>Natural Gas (NG=F)</option>
+                    <option>Wheat (ZW=F)</option>
+                    <option>Soybeans (ZS=F)</option>
+                </select>
+                <div class="role-toggle">
+                    <button class="role-btn active">Buyer</button>
+                    <button class="role-btn">Trader</button>
+                </div>
+                <span class="regime-pill bullish">BULLISH</span>
+            </div>
+            <span class="refresh-time">Last signal: 2 min ago &bull; Next refresh: 13 min</span>
+        </div>
+
+        <!-- DASHBOARD GRID -->
+        <div class="dashboard-grid">
+
+            <!-- ====== LEFT: Signal Engine — Price Features + Forecast ====== -->
+            <div>
+                <div class="panel">
+                    <div class="panel-header">
+                        <span class="panel-title">Signal Engine</span>
+                        <span class="panel-badge" style="background:rgba(201,164,74,0.15);color:#c9a44a;">Layer 2</span>
+                    </div>
+                    <div class="panel-body">
+                        <!-- Chart -->
+                        <div class="chart-area">
+                            <span class="chart-label">Copper 30D</span>
+                            <span class="chart-price">$4.52 &uarr;</span>
+                            <div class="chart-line">
+                                <svg viewBox="0 0 280 100" preserveAspectRatio="none">
+                                    <polyline fill="none" stroke="#4caf50" stroke-width="2"
+                                        points="0,80 20,75 40,70 60,68 80,72 100,65 120,55 140,60 160,48 180,42 200,38 220,45 240,30 260,25 280,20"/>
+                                    <polyline fill="url(#grad)" stroke="none"
+                                        points="0,80 20,75 40,70 60,68 80,72 100,65 120,55 140,60 160,48 180,42 200,38 220,45 240,30 260,25 280,20 280,100 0,100"/>
+                                    <!-- Forecast zone (dashed) -->
+                                    <polyline fill="none" stroke="#c9a44a" stroke-width="1.5" stroke-dasharray="4,3"
+                                        points="280,20 300,15 320,12 340,18 360,10"/>
+                                    <polyline fill="none" stroke="#ef5350" stroke-width="1" stroke-dasharray="3,4" opacity="0.4"
+                                        points="280,20 300,28 320,35 340,40 360,45"/>
+                                    <rect x="278" y="0" width="82" height="100" fill="rgba(201,164,74,0.05)"/>
+                                    <defs>
+                                        <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#4caf50" stop-opacity="0.15"/>
+                                            <stop offset="100%" stop-color="#4caf50" stop-opacity="0"/>
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                            </div>
+                            <!-- Event markers -->
+                            <div class="event-marker positive" style="bottom:62px;left:55%;">
+                                <div class="event-marker-tooltip">Chile port disruption &bull; Mar 28</div>
+                            </div>
+                            <div class="event-marker" style="bottom:78px;left:82%;">
+                                <div class="event-marker-tooltip">China PMI above 50 &bull; Apr 4</div>
+                            </div>
+                        </div>
+
+                        <!-- Price Features -->
+                        <div class="panel-sub-header">Current Signals</div>
+                        <div class="metric-row">
+                            <span class="metric-label">7D Trend</span>
+                            <span class="metric-value up">+0.032 &uarr;</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">30D Trend</span>
+                            <span class="metric-value up">+0.018 &uarr;</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Volatility (20D)</span>
+                            <span class="metric-value neutral">0.047</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Momentum (5D)</span>
+                            <span class="metric-value up">+3.2%</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Spike</span>
+                            <span class="metric-value up">+2.8&sigma; Apr 4</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Regime</span>
+                            <span class="regime-pill bullish">BULLISH</span>
+                        </div>
+
+                        <!-- NEW: Forecast -->
+                        <div class="panel-sub-header">Forecast (7D / 30D)</div>
+                        <div class="forecast-box">
+                            <div class="forecast-row">
+                                <span class="forecast-label">7-Day Target</span>
+                                <span class="forecast-value" style="color:#4caf50;">$4.58 (+1.3%)</span>
+                            </div>
+                            <div class="forecast-row">
+                                <span class="forecast-label">30-Day Target</span>
+                                <span class="forecast-value" style="color:#4caf50;">$4.72 (+4.4%)</span>
+                            </div>
+                            <div class="forecast-row">
+                                <span class="forecast-label">30D Range</span>
+                                <span class="forecast-value" style="color:#888;">$4.20 &ndash; $4.85</span>
+                            </div>
+                            <div class="forecast-range" style="margin-top:10px;">
+                                <span style="font-size:10px;color:#ef5350;">$4.20</span>
+                                <div class="forecast-range-bar">
+                                    <div class="forecast-range-fill" style="left:0;width:100%;background:linear-gradient(90deg,rgba(239,83,80,0.3),rgba(255,193,7,0.3),rgba(76,175,80,0.3));"></div>
+                                    <div class="forecast-range-marker" style="left:49%;background:#c9a44a;" title="Current: $4.52"></div>
+                                    <div class="forecast-range-marker" style="left:80%;background:#4caf50;width:2px;" title="Target: $4.72"></div>
+                                </div>
+                                <span style="font-size:10px;color:#4caf50;">$4.85</span>
+                            </div>
+                            <div class="forecast-row" style="margin-top:8px;">
+                                <span class="forecast-label">Forecast Basis</span>
+                                <span class="forecast-value" style="color:#888;font-size:11px;">Trend + supply deficit + seasonal</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====== CENTER: News + Threat Ranking ====== -->
+            <div>
+                <div class="panel">
+                    <div class="panel-header">
+                        <span class="panel-title">Intelligence Feed</span>
+                        <span class="panel-badge" style="background:rgba(33,150,243,0.15);color:#2196f3;">8 sources</span>
+                    </div>
+                    <div class="panel-body">
+                        <!-- Sentiment bar -->
+                        <div class="sentiment-bar">
+                            <div class="pos" style="width:45%"></div>
+                            <div class="neu" style="width:30%"></div>
+                            <div class="neg" style="width:25%"></div>
+                        </div>
+                        <div class="sentiment-legend">
+                            <span><span class="dot" style="background:#4caf50"></span> Positive 45%</span>
+                            <span><span class="dot" style="background:#555"></span> Neutral 30%</span>
+                            <span><span class="dot" style="background:#ef5350"></span> Negative 25%</span>
+                        </div>
+
+                        <!-- NEW: Threat / Risk Ranking -->
+                        <div class="panel-sub-header">Global Threat Ranking</div>
+                        <div class="threat-list">
+                            <div class="threat-item">
+                                <div class="threat-rank critical">1</div>
+                                <div class="threat-info">
+                                    <div class="threat-title">Chile Port Strike (Week 3)</div>
+                                    <div class="threat-impact">12% supply reduction &bull; No resolution timeline</div>
+                                </div>
+                                <span class="threat-severity critical">Critical</span>
+                            </div>
+                            <div class="threat-item">
+                                <div class="threat-rank high">2</div>
+                                <div class="threat-info">
+                                    <div class="threat-title">EU Smelter Energy Shock</div>
+                                    <div class="threat-impact">+18% cost &bull; 3 smelters at capacity limits</div>
+                                </div>
+                                <span class="threat-severity high">High</span>
+                            </div>
+                            <div class="threat-item">
+                                <div class="threat-rank medium">3</div>
+                                <div class="threat-info">
+                                    <div class="threat-title">China Demand Surge</div>
+                                    <div class="threat-impact">PMI 50.8 &bull; Restocking cycle starting</div>
+                                </div>
+                                <span class="threat-severity medium">Watch</span>
+                            </div>
+                            <div class="threat-item">
+                                <div class="threat-rank low">4</div>
+                                <div class="threat-info">
+                                    <div class="threat-title">US-Peru Trade Easing</div>
+                                    <div class="threat-impact">Framework deal &bull; Tariff risk reduced</div>
+                                </div>
+                                <span class="threat-severity low" style="background:rgba(76,175,80,0.15);color:#4caf50;">Positive</span>
+                            </div>
+                        </div>
+
+                        <!-- Dominant themes -->
+                        <div class="panel-sub-header">Dominant Themes</div>
+                        <div class="brief-drivers" style="margin-bottom:16px;">
+                            <span class="driver-chip">Supply Disruption</span>
+                            <span class="driver-chip">China Demand</span>
+                            <span class="driver-chip">Energy Costs</span>
+                        </div>
+
+                        <!-- Interactive news feed -->
+                        <div class="panel-sub-header">Live News (click to expand)</div>
+                        <div class="news-item" onclick="this.classList.toggle('open')">
+                            <div class="news-meta">
+                                <span class="news-category supply">Supply</span>
+                                <span class="news-sentiment-dot neg"></span>
+                                <span class="news-importance">&star;&star;&star;</span>
+                            </div>
+                            <div class="news-title">Chile copper output falls 12% as port workers extend strike into third week</div>
+                            <div class="news-time">Reuters &bull; 6h ago</div>
+                            <div class="news-detail">
+                                <strong>Impact:</strong> Removes ~180kt/month from global supply. Codelco confirmed force majeure on April contracts. Warehouse inventories at LME dropped 8% this week. Strike negotiation talks resume Monday.<br>
+                                <strong>Signal:</strong> Bearish for supply &rarr; Bullish for price
+                            </div>
+                        </div>
+                        <div class="news-item" onclick="this.classList.toggle('open')">
+                            <div class="news-meta">
+                                <span class="news-category demand">Demand</span>
+                                <span class="news-sentiment-dot pos"></span>
+                                <span class="news-importance">&star;&star;&star;</span>
+                            </div>
+                            <div class="news-title">China manufacturing PMI rises to 50.8, signaling expansion for first time in 6 months</div>
+                            <div class="news-time">Bloomberg &bull; 12h ago</div>
+                            <div class="news-detail">
+                                <strong>Impact:</strong> New orders sub-index at 51.4, highest since Oct 2025. Copper-intensive sectors (construction, electronics) leading. Analysts expect restocking cycle to add 200-300kt demand in Q2.<br>
+                                <strong>Signal:</strong> Bullish for demand &rarr; Bullish for price
+                            </div>
+                        </div>
+                        <div class="news-item" onclick="this.classList.toggle('open')">
+                            <div class="news-meta">
+                                <span class="news-category energy">Energy</span>
+                                <span class="news-sentiment-dot neg"></span>
+                                <span class="news-importance">&star;&star;</span>
+                            </div>
+                            <div class="news-title">European smelter energy costs surge 18% on renewed gas supply concerns</div>
+                            <div class="news-time">FT &bull; 1d ago</div>
+                            <div class="news-detail">
+                                <strong>Impact:</strong> Aurubis and Boliden flagged margin pressure. Potential 5-10% smelter output cuts if gas prices hold above &euro;45/MWh through May.<br>
+                                <strong>Signal:</strong> Supply-side cost push &rarr; Bullish for price
+                            </div>
+                        </div>
+                        <div class="news-item" onclick="this.classList.toggle('open')">
+                            <div class="news-meta">
+                                <span class="news-category macro">Macro</span>
+                                <span class="news-sentiment-dot pos"></span>
+                                <span class="news-importance">&star;</span>
+                            </div>
+                            <div class="news-title">Fed holds rates steady, signals possible September cut amid cooling inflation</div>
+                            <div class="news-time">CNBC &bull; 2d ago</div>
+                            <div class="news-detail">
+                                <strong>Impact:</strong> Dollar weakened 0.4% post-announcement. Lower rates = cheaper financing for commodity stockpiling. Metals complex rallied 1.2% on the news.<br>
+                                <strong>Signal:</strong> Macro tailwind &rarr; Mildly bullish
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====== RIGHT: Decision Brief (Clearer) ====== -->
+            <div>
+                <div class="panel">
+                    <div class="panel-header">
+                        <span class="panel-title">Decision Brief</span>
+                        <span class="panel-badge" style="background:rgba(156,39,176,0.15);color:#ce93d8;">Claude</span>
+                    </div>
+                    <div class="panel-body">
+
+                        <!-- BIG CLEAR DECISION -->
+                        <div class="decision-box buy">
+                            <div class="decision-signal">BUY</div>
+                            <div class="decision-subtitle">Lock in 40% now, stagger remaining 60% over 2 weeks</div>
+                            <div class="decision-details">
+                                <div class="decision-detail">
+                                    <div class="decision-detail-label">Entry</div>
+                                    <div class="decision-detail-value" style="color:#fff;">$4.52</div>
+                                </div>
+                                <div class="decision-detail">
+                                    <div class="decision-detail-label">Target</div>
+                                    <div class="decision-detail-value" style="color:#4caf50;">$4.72</div>
+                                </div>
+                                <div class="decision-detail">
+                                    <div class="decision-detail-label">Stop</div>
+                                    <div class="decision-detail-value" style="color:#ef5350;">$4.20</div>
+                                </div>
+                            </div>
+                            <div class="confidence-bar-wrap">
+                                <span style="font-size:11px;color:#666;">Confidence</span>
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill" style="width:72%"></div>
+                                </div>
+                                <span class="confidence-label">72%</span>
+                            </div>
+                        </div>
+
+                        <!-- Why -->
+                        <div class="brief-section" style="margin-top:16px;">
+                            <div class="brief-label">Why Buy Now</div>
+                            <div class="brief-text">Supply squeeze (Chile &minus;12%) meets rising demand (China PMI 50.8). Price broke 90-day resistance. Trend, momentum, and sentiment all align bullish.</div>
+                        </div>
+
+                        <!-- Risk matrix -->
+                        <div class="brief-section">
+                            <div class="brief-label">Risk Breakdown</div>
+                            <div class="risk-matrix">
+                                <div class="risk-item">
+                                    <div class="risk-item-label">Supply Risk</div>
+                                    <div class="risk-item-value high">High &mdash; Strike ongoing</div>
+                                </div>
+                                <div class="risk-item">
+                                    <div class="risk-item-label">Demand Risk</div>
+                                    <div class="risk-item-value low">Low &mdash; PMI expanding</div>
+                                </div>
+                                <div class="risk-item">
+                                    <div class="risk-item-label">Macro Risk</div>
+                                    <div class="risk-item-value low">Low &mdash; Fed dovish</div>
+                                </div>
+                                <div class="risk-item">
+                                    <div class="risk-item-label">Volatility Risk</div>
+                                    <div class="risk-item-value medium">Medium &mdash; 2.8&sigma; spike</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Scenarios -->
+                        <div class="brief-section">
+                            <div class="brief-label">Scenarios</div>
+                            <div class="scenario-cards">
+                                <div class="scenario-card bull">
+                                    <div class="scenario-label">Bull &mdash; $4.85 (+7%)</div>
+                                    <div class="scenario-text">Strike extends + China restocking. Buy all now.</div>
+                                </div>
+                                <div class="scenario-card base">
+                                    <div class="scenario-label">Base &mdash; $4.60 (+2%)</div>
+                                    <div class="scenario-text">Strike resolves in 2wk. Stagger as planned.</div>
+                                </div>
+                                <div class="scenario-card bear">
+                                    <div class="scenario-label">Bear &mdash; $4.20 (&minus;7%)</div>
+                                    <div class="scenario-text">Strike + China data both reverse. Wait for $4.20 support.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Watchlist -->
+                        <div class="brief-section">
+                            <div class="brief-label">Watch For (Next 7D)</div>
+                            <div class="brief-text" style="font-size:12px;">
+                                &bull; Chile strike negotiation outcome (Monday)<br>
+                                &bull; China copper imports data (Thursday)<br>
+                                &bull; LME warehouse report (Friday)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ============================================ -->
+        <!-- SECTION 2: MOBILE PWA                        -->
+        <!-- ============================================ -->
+        <hr class="section-divider">
+        <span class="view-label mobile">Mobile PWA (375px)</span>
+        <p class="section-title">Same app, responsive &mdash; tab-based navigation on mobile</p>
+
+        <div class="mobile-side-by-side">
+
+            <!-- MOBILE: Decision Tab (primary view) -->
+            <div class="mobile-frame">
+                <div class="mobile-notch"></div>
+                <div class="mobile-status-bar">
+                    <span>9:41</span>
+                    <span style="font-size:10px;color:#888;">LTE</span>
+                </div>
+                <div class="mobile-content">
+                    <div class="m-top-bar">
+                        <div>
+                            <div class="m-commodity">Copper</div>
+                            <div style="font-size:11px;color:#888;">HG=F &bull; $4.52</div>
+                        </div>
+                        <span class="m-regime regime-pill bullish">BULLISH</span>
+                    </div>
+                    <div class="m-role-toggle">
+                        <button class="m-role-btn active">Buyer</button>
+                        <button class="m-role-btn">Trader</button>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div class="m-tabs">
+                        <div class="m-tab active">Decision</div>
+                        <div class="m-tab">Signals</div>
+                        <div class="m-tab">Threats</div>
+                        <div class="m-tab">News</div>
+                    </div>
+
+                    <!-- Decision tab content -->
+                    <div class="m-panel" style="border:2px solid rgba(76,175,80,0.4);background:linear-gradient(135deg, rgba(76,175,80,0.1), rgba(76,175,80,0.03));">
+                        <div class="m-panel-body">
+                            <div class="m-decision">
+                                <div class="m-decision-signal" style="color:#4caf50;">BUY</div>
+                                <div class="m-decision-reason">Lock in 40% now. Stagger 60% over 2 weeks.</div>
+                                <div class="m-decision-row">
+                                    <div class="m-decision-stat">
+                                        <div class="m-decision-stat-label">Entry</div>
+                                        <div class="m-decision-stat-value" style="color:#fff;">$4.52</div>
+                                    </div>
+                                    <div class="m-decision-stat">
+                                        <div class="m-decision-stat-label">Target</div>
+                                        <div class="m-decision-stat-value" style="color:#4caf50;">$4.72</div>
+                                    </div>
+                                    <div class="m-decision-stat">
+                                        <div class="m-decision-stat-label">Stop</div>
+                                        <div class="m-decision-stat-value" style="color:#ef5350;">$4.20</div>
+                                    </div>
+                                </div>
+                                <div class="confidence-bar-wrap" style="margin-top:14px;">
+                                    <span style="font-size:10px;color:#666;">Confidence</span>
+                                    <div class="confidence-bar">
+                                        <div class="confidence-fill" style="width:72%"></div>
+                                    </div>
+                                    <span class="confidence-label">72%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick risk -->
+                    <div class="m-panel">
+                        <div class="m-panel-header">Risk Summary</div>
+                        <div class="m-panel-body">
+                            <div class="m-metric-grid">
+                                <div class="m-metric">
+                                    <div class="m-metric-label">Supply</div>
+                                    <div class="m-metric-value" style="color:#ef5350;">High</div>
+                                </div>
+                                <div class="m-metric">
+                                    <div class="m-metric-label">Demand</div>
+                                    <div class="m-metric-value" style="color:#4caf50;">Low</div>
+                                </div>
+                                <div class="m-metric">
+                                    <div class="m-metric-label">Macro</div>
+                                    <div class="m-metric-value" style="color:#4caf50;">Low</div>
+                                </div>
+                                <div class="m-metric">
+                                    <div class="m-metric-label">Volatility</div>
+                                    <div class="m-metric-value" style="color:#ff9800;">Medium</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scenarios compact -->
+                    <div class="m-panel">
+                        <div class="m-panel-header">Scenarios</div>
+                        <div class="m-panel-body" style="padding:8px 14px;">
+                            <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #1f2233;">
+                                <span style="font-size:11px;font-weight:700;color:#4caf50;width:40px;">Bull</span>
+                                <span style="font-size:12px;color:#999;flex:1;">$4.85 (+7%)</span>
+                                <span style="font-size:11px;color:#666;">Strike extends</span>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #1f2233;">
+                                <span style="font-size:11px;font-weight:700;color:#ffc107;width:40px;">Base</span>
+                                <span style="font-size:12px;color:#999;flex:1;">$4.60 (+2%)</span>
+                                <span style="font-size:11px;color:#666;">Resolves 2wk</span>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:8px;padding:6px 0;">
+                                <span style="font-size:11px;font-weight:700;color:#ef5350;width:40px;">Bear</span>
+                                <span style="font-size:12px;color:#999;flex:1;">$4.20 (&minus;7%)</span>
+                                <span style="font-size:11px;color:#666;">Both reverse</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="height:20px;"></div>
+                    <!-- Bottom nav -->
+                    <div class="m-bottom-nav">
+                        <div class="m-nav-item active"><div class="m-nav-icon">&bull;</div>Dashboard</div>
+                        <div class="m-nav-item"><div class="m-nav-icon">&#9737;</div>Watchlist</div>
+                        <div class="m-nav-item"><div class="m-nav-icon">&#9881;</div>Settings</div>
+                    </div>
+                </div>
+                <div class="mobile-home-indicator"></div>
+            </div>
+
+            <!-- MOBILE: Threats Tab -->
+            <div class="mobile-frame">
+                <div class="mobile-notch"></div>
+                <div class="mobile-status-bar">
+                    <span>9:41</span>
+                    <span style="font-size:10px;color:#888;">LTE</span>
+                </div>
+                <div class="mobile-content">
+                    <div class="m-top-bar">
+                        <div>
+                            <div class="m-commodity">Copper</div>
+                            <div style="font-size:11px;color:#888;">HG=F &bull; $4.52</div>
+                        </div>
+                        <span class="m-regime regime-pill bullish">BULLISH</span>
+                    </div>
+
+                    <!-- Tabs - Threats active -->
+                    <div class="m-tabs">
+                        <div class="m-tab">Decision</div>
+                        <div class="m-tab">Signals</div>
+                        <div class="m-tab active">Threats</div>
+                        <div class="m-tab">News</div>
+                    </div>
+
+                    <div class="m-panel">
+                        <div class="m-panel-header">Global Threat Ranking</div>
+                        <div class="m-panel-body">
+                            <div class="m-threat">
+                                <div class="m-threat-rank" style="background:rgba(239,83,80,0.2);color:#ef5350;">1</div>
+                                <div class="m-threat-text">
+                                    <div style="font-weight:600;">Chile Port Strike</div>
+                                    <div style="font-size:10px;color:#666;margin-top:2px;">&minus;12% supply &bull; No resolution</div>
+                                </div>
+                                <span class="m-threat-badge" style="background:rgba(239,83,80,0.15);color:#ef5350;">Critical</span>
+                            </div>
+                            <div class="m-threat">
+                                <div class="m-threat-rank" style="background:rgba(255,152,0,0.2);color:#ff9800;">2</div>
+                                <div class="m-threat-text">
+                                    <div style="font-weight:600;">EU Energy Shock</div>
+                                    <div style="font-size:10px;color:#666;margin-top:2px;">+18% smelter costs</div>
+                                </div>
+                                <span class="m-threat-badge" style="background:rgba(255,152,0,0.15);color:#ff9800;">High</span>
+                            </div>
+                            <div class="m-threat">
+                                <div class="m-threat-rank" style="background:rgba(255,193,7,0.2);color:#ffc107;">3</div>
+                                <div class="m-threat-text">
+                                    <div style="font-weight:600;">China Demand Surge</div>
+                                    <div style="font-size:10px;color:#666;margin-top:2px;">PMI 50.8 &bull; Restocking</div>
+                                </div>
+                                <span class="m-threat-badge" style="background:rgba(255,193,7,0.15);color:#ffc107;">Watch</span>
+                            </div>
+                            <div class="m-threat">
+                                <div class="m-threat-rank" style="background:rgba(76,175,80,0.2);color:#4caf50;">4</div>
+                                <div class="m-threat-text">
+                                    <div style="font-weight:600;">US-Peru Trade Easing</div>
+                                    <div style="font-size:10px;color:#666;margin-top:2px;">Tariff risk reduced</div>
+                                </div>
+                                <span class="m-threat-badge" style="background:rgba(76,175,80,0.15);color:#4caf50;">Positive</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chart compact -->
+                    <div class="m-panel">
+                        <div class="m-panel-header">
+                            Price + Forecast
+                            <span style="font-size:11px;color:#4caf50;font-weight:600;">$4.52 &uarr;</span>
+                        </div>
+                        <div class="m-chart">
+                            <svg viewBox="0 0 340 120" preserveAspectRatio="none" style="width:100%;height:100%;">
+                                <polyline fill="none" stroke="#4caf50" stroke-width="2"
+                                    points="10,100 40,92 70,85 100,82 130,88 160,78 190,65 220,70 250,55 280,48 310,40"/>
+                                <polyline fill="none" stroke="#c9a44a" stroke-width="1.5" stroke-dasharray="4,3"
+                                    points="310,40 325,35 340,30"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Forecast mini -->
+                    <div class="m-panel">
+                        <div class="m-panel-header">Forecast</div>
+                        <div class="m-panel-body">
+                            <div class="m-metric-grid">
+                                <div class="m-metric">
+                                    <div class="m-metric-label">7D Target</div>
+                                    <div class="m-metric-value" style="color:#4caf50;">$4.58</div>
+                                </div>
+                                <div class="m-metric">
+                                    <div class="m-metric-label">30D Target</div>
+                                    <div class="m-metric-value" style="color:#4caf50;">$4.72</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="height:20px;"></div>
+                    <div class="m-bottom-nav">
+                        <div class="m-nav-item active"><div class="m-nav-icon">&bull;</div>Dashboard</div>
+                        <div class="m-nav-item"><div class="m-nav-icon">&#9737;</div>Watchlist</div>
+                        <div class="m-nav-item"><div class="m-nav-icon">&#9881;</div>Settings</div>
+                    </div>
+                </div>
+                <div class="mobile-home-indicator"></div>
+            </div>
+        </div>
+
+
+        <!-- ============================================ -->
+        <!-- SECTION 3: IMPLEMENTATION PLAN               -->
+        <!-- ============================================ -->
+        <hr class="section-divider">
+        <span class="view-label plan">Implementation Plan</span>
+        <h1 style="margin-top:8px;">24h Hackathon Stack &amp; Build Plan</h1>
+        <p class="subtitle">What to use, how to split, what order to build</p>
+
+        <!-- Timeline -->
+        <div class="panel" style="margin-bottom:24px;">
+            <div class="panel-header">
+                <span class="panel-title">24-Hour Timeline</span>
+                <span class="panel-badge" style="background:rgba(201,164,74,0.15);color:#c9a44a;">4 Phases</span>
+            </div>
+            <div class="panel-body">
+                <div class="timeline-bar">
+                    <div class="timeline-block" style="flex:3;background:rgba(33,150,243,0.2);color:#2196f3;">0&ndash;6h: Data + Signal Engine</div>
+                    <div class="timeline-block" style="flex:2;background:rgba(156,39,176,0.2);color:#ce93d8;">6&ndash;12h: Claude API</div>
+                    <div class="timeline-block" style="flex:2.5;background:rgba(201,164,74,0.2);color:#c9a44a;">12&ndash;18h: UI + Polish</div>
+                    <div class="timeline-block" style="flex:1.5;background:rgba(76,175,80,0.2);color:#4caf50;">18&ndash;24h: Demo</div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-top:16px;">
+                    <div style="font-size:11px;color:#888;line-height:1.6;">
+                        <strong style="color:#2196f3;">Phase 1</strong><br>
+                        &bull; yfinance data fetch<br>
+                        &bull; NewsAPI integration<br>
+                        &bull; Signal Engine (pandas)<br>
+                        &bull; signals.json output
+                    </div>
+                    <div style="font-size:11px;color:#888;line-height:1.6;">
+                        <strong style="color:#ce93d8;">Phase 2</strong><br>
+                        &bull; Claude prompt design<br>
+                        &bull; JSON schema enforce<br>
+                        &bull; Role-based prompts<br>
+                        &bull; Threat ranking logic
+                    </div>
+                    <div style="font-size:11px;color:#888;line-height:1.6;">
+                        <strong style="color:#c9a44a;">Phase 3</strong><br>
+                        &bull; Streamlit layout<br>
+                        &bull; Decision card<br>
+                        &bull; Interactive news feed<br>
+                        &bull; Mobile responsive
+                    </div>
+                    <div style="font-size:11px;color:#888;line-height:1.6;">
+                        <strong style="color:#4caf50;">Phase 4</strong><br>
+                        &bull; End-to-end test<br>
+                        &bull; Demo narrative<br>
+                        &bull; Edge cases<br>
+                        &bull; Presentation slides
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tech Stack -->
+        <div class="plan-grid">
+
+            <!-- Layer 1: Data -->
+            <div class="plan-card">
+                <div class="plan-card-header">
+                    <div class="plan-card-icon" style="background:rgba(33,150,243,0.15);color:#2196f3;">1</div>
+                    <div class="plan-card-title">Layer 1 &mdash; Data Ingestion</div>
+                </div>
+                <div class="plan-card-body">
+                    <div class="plan-item"><span class="plan-check">&check;</span> <code>yfinance</code> &mdash; free commodity price data (OHLCV), no API key</div>
+                    <div class="plan-item"><span class="plan-check">&check;</span> <code>NewsAPI</code> &mdash; free tier 100 req/day, commodity news by keyword</div>
+                    <div class="plan-item"><span class="plan-check">&check;</span> <code>pandas</code> &mdash; data wrangling, rolling calcs, time series</div>
+                    <div class="plan-item"><span class="plan-check">&check;</span> Cache with <code>st.cache_data</code> or JSON file (avoid re-fetching in demo)</div>
+                    <div style="margin-top:10px;padding:8px 10px;background:#12141c;border-radius:6px;font-size:11px;color:#666;">
+                        <strong style="color:#2196f3;">Fallback:</strong> If NewsAPI rate-limits, pre-cache 20 articles as JSON fixture. Demo still works.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Layer 2: Signal Engine -->
+            <div class="plan-card">
+                <div class="plan-card-header">
+                    <div class="plan-card-icon" style="background:rgba(201,164,74,0.15);color:#c9a44a;">2</div>
+                    <div class="plan-card-title">Layer 2 &mdash; Signal Engine (Python)</div>
+                </div>
+                <div class="plan-card-body">
+                    <div class="plan-item"><span class="plan-check">&check;</span> <code>numpy</code> + <code>pandas</code> &mdash; trend (linregress), volatility (rolling std), momentum</div>
+                    <div class="plan-item"><span class="plan-check">&check;</span> Regime classifier: slope + volatility thresholds &rarr; bullish/bearish/sideways/volatile</div>
+                    <div class="plan-item"><span class="plan-check">&check;</span> Spike detection: Z-score &gt; 2&sigma; on daily returns</div>
+                    <div class="plan-item"><span class="plan-check">&check;</span> News: keyword scoring + Claude mini-call for sentiment batch</div>
+                    <div class="plan-item"><span class="plan-check">&check;</span> Threat ranking: severity = sentiment &times; recency &times; category weight</div>
+                    <div class="plan-item"><span class="plan-check">&check;</span> Forecast: simple linear extrapolation + range from volatility bands</div>
+                    <div style="margin-top:10px;padding:8px 10px;background:#12141c;border-radius:6px;font-size:11px;color:#666;">
+                        <strong style="color:#c9a44a;">Output:</strong> <code>signals.json</code> with price_features, news_features, threats[], forecast{}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Layer 3: Claude Intelligence -->
+            <div class="plan-card">
+                <div class="plan-card-header">
+                    <div class="plan-card-icon" style="background:rgba(156,39,176,0.15);color:#ce93d8;">3</div>
+                    <div class="plan-card-title">Layer 3 &mdash; Claude Intelligence</div>
+                </div>
+                <div class="plan-card-body">
+                    <div class="plan-item"><span class="plan-check">&check;</span> <code>anthropic</code> Python SDK &mdash; Claude Sonnet 4 (fast + cheap for hackathon)</div>
+                    <div class="plan-item"><span class="plan-check">&check;</span> Structured output via <code>tool_use</code> &mdash; force JSON schema compliance</div>
+                    <div class="plan-item"><span class="plan-check">&check;</span> Role-aware system prompt: Buyer framing vs Trader framing</div>
+                    <div class="plan-item"><span class="plan-check">&check;</span> Output schema: <code>{decision, entry, target, stop, confidence, why, risks{}, scenarios[], watchlist[]}</code></div>
+                    <div class="plan-item"><span class="plan-check">&check;</span> Decision forced to exactly one of: <code>BUY</code> / <code>SELL</code> / <code>WAIT</code></div>
+                    <div style="margin-top:10px;padding:8px 10px;background:#12141c;border-radius:6px;font-size:11px;color:#666;">
+                        <strong style="color:#ce93d8;">Key:</strong> Claude sees signals.json, NOT raw data. It reasons on pre-computed features.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Layer 4: UI -->
+            <div class="plan-card">
+                <div class="plan-card-header">
+                    <div class="plan-card-icon" style="background:rgba(76,175,80,0.15);color:#4caf50;">4</div>
+                    <div class="plan-card-title">Layer 4 &mdash; UI (Streamlit PWA)</div>
+                </div>
+                <div class="plan-card-body">
+                    <div class="plan-item"><span class="plan-check">&check;</span> <code>streamlit</code> &mdash; fastest path to polished demo, zero frontend build</div>
+                    <div class="plan-item"><span class="plan-check">&check;</span> <code>plotly</code> &mdash; interactive charts with forecast zone + event markers</div>
+                    <div class="plan-item"><span class="plan-check">&check;</span> Custom CSS via <code>st.markdown(unsafe_allow_html=True)</code> for dark theme</div>
+                    <div class="plan-item"><span class="plan-check">&check;</span> Mobile responsive via Streamlit columns + media queries in custom CSS</div>
+                    <div class="plan-item"><span class="plan-check">&check;</span> Sections: Decision (hero) &rarr; Threats &rarr; Signals &rarr; News &rarr; Forecast</div>
+                    <div style="margin-top:10px;padding:8px 10px;background:#12141c;border-radius:6px;font-size:11px;color:#666;">
+                        <strong style="color:#4caf50;">Deploy:</strong> <code>streamlit run app.py</code> &mdash; shareable URL via Streamlit Cloud (free)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- File structure -->
+        <div class="panel" style="margin-top:16px;">
+            <div class="panel-header">
+                <span class="panel-title">Project File Structure</span>
+            </div>
+            <div class="panel-body">
+                <div class="arch-diagram" style="line-height:1.8;"><span class="layer">commodity-signal-intelligence/</span>
+<span class="component">  app.py</span>                  <span class="arrow"># Streamlit entry point</span>
+<span class="component">  signal_engine/</span>
+<span class="component">    __init__.py</span>
+<span class="component">    price_features.py</span>     <span class="arrow"># trend, volatility, momentum, regime, forecast</span>
+<span class="component">    news_features.py</span>      <span class="arrow"># sentiment, category, importance, threat ranking</span>
+<span class="component">    signals.py</span>            <span class="arrow"># orchestrator &rarr; outputs signals.json</span>
+<span class="component">  intelligence/</span>
+<span class="component">    __init__.py</span>
+<span class="component">    claude_client.py</span>      <span class="arrow"># Claude API call + JSON schema</span>
+<span class="component">    prompts.py</span>            <span class="arrow"># system prompts (buyer / trader)</span>
+<span class="component">    schema.py</span>             <span class="arrow"># output schema definition</span>
+<span class="component">  ui/</span>
+<span class="component">    components.py</span>         <span class="arrow"># Streamlit custom components</span>
+<span class="component">    styles.py</span>             <span class="arrow"># dark theme CSS</span>
+<span class="component">    charts.py</span>             <span class="arrow"># Plotly chart builders</span>
+<span class="component">  data/</span>
+<span class="component">    cache/</span>                <span class="arrow"># cached API responses for demo reliability</span>
+<span class="component">  requirements.txt</span>         <span class="arrow"># streamlit, anthropic, yfinance, newsapi-python, plotly, pandas</span>
+<span class="component">  .env</span>                     <span class="arrow"># ANTHROPIC_API_KEY, NEWSAPI_KEY</span></div>
+            </div>
+        </div>
+
+        <!-- Dependencies -->
+        <div class="panel" style="margin-top:16px;">
+            <div class="panel-header">
+                <span class="panel-title">requirements.txt (exact versions)</span>
+            </div>
+            <div class="panel-body">
+                <div class="arch-diagram" style="line-height:1.8;color:#c9a44a;"><span class="component">streamlit==1.45.0</span>
+<span class="component">anthropic==0.52.0</span>
+<span class="component">yfinance==0.2.54</span>
+<span class="component">newsapi-python==0.2.7</span>
+<span class="component">plotly==6.0.1</span>
+<span class="component">pandas==2.2.3</span>
+<span class="component">numpy==2.2.4</span></div>
+            </div>
+        </div>
+
+
+        <!-- ============================================ -->
+        <!-- SECTION 4: DESIGN DECISIONS                  -->
+        <!-- ============================================ -->
+        <hr class="section-divider">
+        <div class="questions">
+            <div style="font-size:14px;font-weight:600;color:#ccc;margin-bottom:16px;">Design Decisions</div>
+
+            <div class="question">
+                <div class="question-title">Q: Why structured signals before Claude?</div>
+                <div class="question-answer"><span class="yes">CRITICAL</span> &mdash; Without pre-computed features, judges see "prompt wrapper." The Signal Engine makes Claude a decision analyst, not a summarizer.</div>
+            </div>
+
+            <div class="question">
+                <div class="question-title">Q: Why BUY / SELL / WAIT instead of nuanced text?</div>
+                <div class="question-answer"><span class="yes">CLARITY</span> &mdash; Analysts need a clear signal. The big green/red/yellow box is the first thing they see. Details (entry, target, stop, why, risks) are below for context. One glance = one decision.</div>
+            </div>
+
+            <div class="question">
+                <div class="question-title">Q: Why a Threat Ranking?</div>
+                <div class="question-answer"><span class="yes">GLOBAL AWARENESS</span> &mdash; Raw news is noise. Ranked threats show what actually moves the market, sorted by severity. Analysts can scan top threats in 3 seconds instead of reading 8 articles.</div>
+            </div>
+
+            <div class="question">
+                <div class="question-title">Q: Why Forecast in the Signal Engine?</div>
+                <div class="question-answer"><span class="yes">CREDIBILITY</span> &mdash; A dashboard without "what's next" is just a report. The forecast (7D/30D target + range) gives the analyst a reference point. Even a simple linear extrapolation + volatility bands is more useful than nothing.</div>
+            </div>
+
+            <div class="question">
+                <div class="question-title">Q: Why Streamlit, not Next.js or React?</div>
+                <div class="question-answer"><span class="yes">SPEED</span> &mdash; 24h hackathon. Streamlit = 0 build step, built-in dark theme, native Plotly charts, instant deploy. You'd spend 8h on React boilerplate. Streamlit gets you to a polished demo in 4h of UI work.</div>
+            </div>
+
+            <div class="question">
+                <div class="question-title">Q: Mobile PWA with Streamlit?</div>
+                <div class="question-answer"><span class="future">WORKS</span> &mdash; Streamlit is responsive out of the box. Use columns + custom CSS media queries for mobile. Tab-based nav on small screens. Not native-quality but very demo-able on a phone.</div>
+            </div>
+
+            <div class="question">
+                <div class="question-title">Q: Interactive news &mdash; how?</div>
+                <div class="question-answer"><span class="future">EXPANDERS</span> &mdash; Streamlit <code>st.expander()</code> for each news item. Click to see impact analysis + signal direction. In this mockup it's onclick toggle. Same pattern.</div>
+            </div>
+        </div>
+
+        <div class="note warning" style="margin-top:24px;">
+            <strong>Hackathon MVP scope:</strong> Signal Engine + Claude JSON output + BUY/SELL/WAIT decision card + Threat ranking are NON-NEGOTIABLE. Forecast and interactive news are high-value extras. Event markers on chart are nice-to-have.
+        </div>
+
+        <div class="note success">
+            <strong>Demo tip:</strong> Pre-cache one commodity (Copper) with real data. During demo, show the live flow once, then switch to cached data for reliability. Judges care about the system, not whether your API call works live.
+        </div>
+
+    </div>
+</body>
+</html>

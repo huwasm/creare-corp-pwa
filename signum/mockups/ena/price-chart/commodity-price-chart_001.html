@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENA: Commodity Price Chart — Mockup</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1117; color: #e0e0e0; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { font-size: 20px; margin-bottom: 6px; color: #fff; }
+        .subtitle { font-size: 13px; color: #888; margin-bottom: 24px; }
+        .section-title { font-size: 12px; font-weight: 600; color: #888; margin: 24px 0 12px; text-transform: uppercase; letter-spacing: 1px; }
+        .section-divider { border: none; border-top: 2px solid #c9a44a; margin: 60px 0 40px; opacity: 0.3; }
+        .view-label { display: inline-block; font-size: 11px; font-weight: 700; padding: 4px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .view-label.desktop { background: rgba(33,150,243,0.15); color: #2196f3; }
+        .view-label.mobile { background: rgba(255,152,0,0.15); color: #ff9800; }
+        .view-label.qa { background: rgba(76,175,80,0.15); color: #4caf50; }
+
+        /* Chart Panel */
+        .chart-panel { background: #1a1d28; border-radius: 14px; border: 1px solid #2a2d3a; overflow: hidden; }
+        .chart-header { padding: 16px 20px 12px; border-bottom: 1px solid #2a2d3a; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+        .chart-header-left { display: flex; align-items: center; gap: 16px; }
+        .chart-header-right { display: flex; align-items: center; gap: 12px; }
+
+        /* Commodity Selector */
+        .commodity-select { background: #252838; border: 1px solid #3a3d4a; color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 14px; cursor: pointer; outline: none; }
+        .commodity-select:focus { border-color: #c9a44a; }
+
+        /* Price Display */
+        .price-display { display: flex; align-items: baseline; gap: 8px; }
+        .price-value { font-size: 28px; font-weight: 700; font-family: 'SF Mono', 'Fira Code', monospace; color: #fff; }
+        .price-unit { font-size: 12px; color: #555; }
+        .price-change { font-size: 14px; font-weight: 600; padding: 3px 10px; border-radius: 6px; }
+        .price-change.up { background: rgba(76,175,80,0.15); color: #4caf50; }
+        .price-change.down { background: rgba(239,83,80,0.15); color: #ef5350; }
+
+        /* Chart Type Pills */
+        .pill-group { display: flex; background: #252838; border-radius: 8px; overflow: hidden; border: 1px solid #3a3d4a; }
+        .pill { padding: 6px 14px; font-size: 12px; cursor: pointer; border: none; background: transparent; color: #666; transition: all 0.2s; font-weight: 500; }
+        .pill.active { background: #c9a44a; color: #0f1117; font-weight: 600; }
+        .pill:hover:not(.active) { color: #aaa; }
+
+        /* Time Range Pills */
+        .time-pills { display: flex; gap: 4px; }
+        .time-pill { padding: 5px 12px; font-size: 11px; cursor: pointer; border: 1px solid #3a3d4a; background: transparent; color: #666; border-radius: 6px; transition: all 0.2s; font-weight: 500; }
+        .time-pill.active { background: #2a2d3a; color: #fff; border-color: #4a4d5a; }
+        .time-pill:hover:not(.active) { border-color: #4a4d5a; color: #aaa; }
+
+        /* Chart Area */
+        .chart-body { padding: 20px; height: 400px; position: relative; }
+        .chart-area { width: 100%; height: 100%; position: relative; }
+
+        /* SVG Chart */
+        .chart-svg { width: 100%; height: 100%; }
+        .chart-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .chart-area-fill { opacity: 0.1; }
+        .chart-grid-line { stroke: #1f2233; stroke-width: 1; }
+        .chart-label { fill: #555; font-size: 11px; font-family: 'SF Mono', 'Fira Code', monospace; }
+        .chart-crosshair { stroke: #3a3d4a; stroke-width: 1; stroke-dasharray: 4,4; }
+
+        /* Price Annotations */
+        .annotation { position: absolute; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; font-family: 'SF Mono', monospace; }
+        .annotation.high { background: rgba(76,175,80,0.2); color: #4caf50; }
+        .annotation.low { background: rgba(239,83,80,0.2); color: #ef5350; }
+        .annotation.current { background: rgba(201,164,74,0.2); color: #c9a44a; }
+
+        /* Stats Row */
+        .stats-row { display: flex; gap: 24px; padding: 12px 20px; border-top: 1px solid #2a2d3a; background: #161822; border-radius: 0 0 14px 14px; }
+        .stat { display: flex; flex-direction: column; gap: 2px; }
+        .stat-label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+        .stat-value { font-size: 13px; font-weight: 600; font-family: 'SF Mono', monospace; color: #ccc; }
+        .stat-value.up { color: #4caf50; }
+        .stat-value.down { color: #ef5350; }
+
+        /* Commodity Tabs (alternative to dropdown) */
+        .commodity-tabs { display: flex; gap: 8px; }
+        .commodity-tab { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 8px; border: 1px solid #2a2d3a; background: transparent; cursor: pointer; transition: all 0.2s; }
+        .commodity-tab .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .commodity-tab .label { font-size: 12px; font-weight: 500; color: #666; }
+        .commodity-tab .symbol { font-size: 11px; font-weight: 600; color: #444; font-family: 'SF Mono', monospace; }
+        .commodity-tab.active { border-color: #3a3d4a; background: #252838; }
+        .commodity-tab.active .label { color: #fff; }
+        .commodity-tab.active .symbol { color: #888; }
+
+        /* Multi-line overlay */
+        .chart-legend { display: flex; gap: 16px; margin-top: 8px; }
+        .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #666; cursor: pointer; }
+        .legend-item .swatch { width: 12px; height: 3px; border-radius: 2px; }
+        .legend-item.active { color: #ccc; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .chart-header { flex-direction: column; align-items: flex-start; }
+            .chart-body { height: 280px; }
+            .stats-row { flex-wrap: wrap; gap: 16px; }
+            .commodity-tabs { flex-wrap: wrap; }
+        }
+
+        /* ---- Q&A Section ---- */
+        .qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+        @media (max-width: 900px) { .qa-grid { grid-template-columns: 1fr; } }
+        .qa-card { background: #1a1d28; border-radius: 12px; border: 1px solid #2a2d3a; padding: 16px 20px; }
+        .qa-q { font-size: 13px; font-weight: 600; color: #c9a44a; margin-bottom: 8px; }
+        .qa-a { font-size: 12px; color: #888; line-height: 1.6; }
+        code { background: #252838; padding: 1px 6px; border-radius: 4px; font-size: 11px; color: #c9a44a; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>ENA — Commodity Price Chart</h1>
+    <p class="subtitle">Price visualization block for the commodity signal intelligence dashboard</p>
+
+    <!-- ============================== -->
+    <!-- VARIANT A: Tabs + Line Chart   -->
+    <!-- ============================== -->
+    <span class="view-label desktop">Desktop — Variant A: Tabs</span>
+
+    <div class="chart-panel">
+        <div class="chart-header">
+            <div class="chart-header-left">
+                <!-- Commodity Tabs -->
+                <div class="commodity-tabs">
+                    <button class="commodity-tab active">
+                        <span class="dot" style="background: #E87040;"></span>
+                        <span class="label">Copper</span>
+                        <span class="symbol">Cu</span>
+                    </button>
+                    <button class="commodity-tab">
+                        <span class="dot" style="background: #4CAF50;"></span>
+                        <span class="label">Nickel</span>
+                        <span class="symbol">Ni</span>
+                    </button>
+                    <button class="commodity-tab">
+                        <span class="dot" style="background: #2196F3;"></span>
+                        <span class="label">Aluminium</span>
+                        <span class="symbol">Al</span>
+                    </button>
+                </div>
+
+                <!-- Price Display -->
+                <div class="price-display">
+                    <span class="price-value">$12,147.01</span>
+                    <span class="price-unit">USD/mt</span>
+                    <span class="price-change up">+2.34%</span>
+                </div>
+            </div>
+
+            <div class="chart-header-right">
+                <!-- Chart Type Pills -->
+                <div class="pill-group">
+                    <button class="pill active">Line</button>
+                    <button class="pill">Area</button>
+                    <button class="pill">Candle</button>
+                    <button class="pill">Bar</button>
+                </div>
+
+                <!-- Time Range -->
+                <div class="time-pills">
+                    <button class="time-pill">7D</button>
+                    <button class="time-pill">30D</button>
+                    <button class="time-pill active">90D</button>
+                    <button class="time-pill">1Y</button>
+                    <button class="time-pill">ALL</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart Body — Line Chart (Copper) -->
+        <div class="chart-body">
+            <div class="chart-area">
+                <svg class="chart-svg" viewBox="0 0 1000 350" preserveAspectRatio="none">
+                    <!-- Grid lines -->
+                    <line x1="0" y1="70" x2="1000" y2="70" class="chart-grid-line"/>
+                    <line x1="0" y1="140" x2="1000" y2="140" class="chart-grid-line"/>
+                    <line x1="0" y1="210" x2="1000" y2="210" class="chart-grid-line"/>
+                    <line x1="0" y1="280" x2="1000" y2="280" class="chart-grid-line"/>
+
+                    <!-- Y-axis labels -->
+                    <text x="8" y="68" class="chart-label">$12,500</text>
+                    <text x="8" y="138" class="chart-label">$11,000</text>
+                    <text x="8" y="208" class="chart-label">$9,500</text>
+                    <text x="8" y="278" class="chart-label">$8,000</text>
+
+                    <!-- X-axis labels -->
+                    <text x="100" y="340" class="chart-label">Jan</text>
+                    <text x="280" y="340" class="chart-label">Feb</text>
+                    <text x="460" y="340" class="chart-label">Mar</text>
+                    <text x="640" y="340" class="chart-label">Apr</text>
+                    <text x="820" y="340" class="chart-label">May</text>
+
+                    <!-- Area fill -->
+                    <path d="M80,180 C150,170 200,140 280,120 C360,100 400,85 460,60 C520,35 560,50 620,80 C680,110 720,90 780,70 C840,50 880,55 940,40 L940,310 L80,310 Z"
+                          fill="#E87040" class="chart-area-fill"/>
+
+                    <!-- Price line (Copper — 90D) -->
+                    <path d="M80,180 C150,170 200,140 280,120 C360,100 400,85 460,60 C520,35 560,50 620,80 C680,110 720,90 780,70 C840,50 880,55 940,40"
+                          class="chart-line" stroke="#E87040"/>
+
+                    <!-- Current price dot -->
+                    <circle cx="940" cy="40" r="5" fill="#E87040"/>
+                    <circle cx="940" cy="40" r="8" fill="none" stroke="#E87040" stroke-width="2" opacity="0.3"/>
+
+                    <!-- High marker -->
+                    <circle cx="520" cy="35" r="3" fill="#4caf50"/>
+                    <line x1="520" y1="35" x2="520" y2="15" stroke="#4caf50" stroke-width="1" opacity="0.5"/>
+
+                    <!-- Low marker -->
+                    <circle cx="80" cy="180" r="3" fill="#ef5350"/>
+                    <line x1="80" y1="180" x2="80" y2="200" stroke="#ef5350" stroke-width="1" opacity="0.5"/>
+
+                    <!-- Crosshair (hover state example) -->
+                    <line x1="620" y1="0" x2="620" y2="320" class="chart-crosshair"/>
+                    <line x1="0" y1="80" x2="1000" y2="80" class="chart-crosshair"/>
+                    <circle cx="620" cy="80" r="4" fill="#c9a44a" stroke="#0f1117" stroke-width="2"/>
+                </svg>
+
+                <!-- Annotations -->
+                <span class="annotation high" style="top: 4%; left: 50%;">H $12,850</span>
+                <span class="annotation low" style="top: 48%; left: 2%;">L $9,240</span>
+                <span class="annotation current" style="top: 6%; right: 2%;">$12,147</span>
+            </div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="stats-row">
+            <div class="stat">
+                <span class="stat-label">Open</span>
+                <span class="stat-value">$11,872.40</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">High (90D)</span>
+                <span class="stat-value up">$12,850.00</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Low (90D)</span>
+                <span class="stat-value down">$9,240.15</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Change</span>
+                <span class="stat-value up">+$274.61 (+2.34%)</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Avg (90D)</span>
+                <span class="stat-value">$10,945.30</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Volume</span>
+                <span class="stat-value">1,580 records</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- VARIANT B: Dropdown + Area     -->
+    <!-- ============================== -->
+    <div style="margin-top: 48px;">
+        <span class="view-label desktop">Desktop — Variant B: Dropdown + Area Fill</span>
+
+        <div class="chart-panel">
+            <div class="chart-header">
+                <div class="chart-header-left">
+                    <select class="commodity-select">
+                        <option>Cu — Copper</option>
+                        <option selected>Ni — Nickel</option>
+                        <option>Al — Aluminium</option>
+                    </select>
+
+                    <div class="price-display">
+                        <span class="price-value">$16,900.00</span>
+                        <span class="price-unit">USD/mt</span>
+                        <span class="price-change down">-1.12%</span>
+                    </div>
+                </div>
+
+                <div class="chart-header-right">
+                    <div class="pill-group">
+                        <button class="pill">Line</button>
+                        <button class="pill active">Area</button>
+                        <button class="pill">Candle</button>
+                        <button class="pill">Bar</button>
+                    </div>
+
+                    <div class="time-pills">
+                        <button class="time-pill">7D</button>
+                        <button class="time-pill">30D</button>
+                        <button class="time-pill">90D</button>
+                        <button class="time-pill active">1Y</button>
+                        <button class="time-pill">ALL</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-body">
+                <div class="chart-area">
+                    <svg class="chart-svg" viewBox="0 0 1000 350" preserveAspectRatio="none">
+                        <line x1="0" y1="70" x2="1000" y2="70" class="chart-grid-line"/>
+                        <line x1="0" y1="140" x2="1000" y2="140" class="chart-grid-line"/>
+                        <line x1="0" y1="210" x2="1000" y2="210" class="chart-grid-line"/>
+                        <line x1="0" y1="280" x2="1000" y2="280" class="chart-grid-line"/>
+
+                        <text x="8" y="68" class="chart-label">$25,000</text>
+                        <text x="8" y="138" class="chart-label">$20,000</text>
+                        <text x="8" y="208" class="chart-label">$15,000</text>
+                        <text x="8" y="278" class="chart-label">$10,000</text>
+
+                        <!-- Nickel area — volatile pattern -->
+                        <path d="M60,200 C120,180 160,100 220,60 C280,20 320,40 380,80 C440,120 480,160 540,190 C600,220 640,200 700,170 C760,140 800,130 860,150 C920,170 950,165 960,160 L960,310 L60,310 Z"
+                              fill="#4CAF50" class="chart-area-fill" style="opacity: 0.15;"/>
+
+                        <path d="M60,200 C120,180 160,100 220,60 C280,20 320,40 380,80 C440,120 480,160 540,190 C600,220 640,200 700,170 C760,140 800,130 860,150 C920,170 950,165 960,160"
+                              class="chart-line" stroke="#4CAF50"/>
+
+                        <circle cx="960" cy="160" r="5" fill="#4CAF50"/>
+                        <circle cx="960" cy="160" r="8" fill="none" stroke="#4CAF50" stroke-width="2" opacity="0.3"/>
+
+                        <circle cx="220" cy="60" r="3" fill="#4caf50"/>
+                        <circle cx="540" cy="190" r="3" fill="#ef5350"/>
+                    </svg>
+
+                    <span class="annotation high" style="top: 12%; left: 20%;">H $24,200</span>
+                    <span class="annotation low" style="top: 52%; left: 52%;">L $14,100</span>
+                    <span class="annotation current" style="top: 40%; right: 2%;">$16,900</span>
+                </div>
+            </div>
+
+            <div class="stats-row">
+                <div class="stat">
+                    <span class="stat-label">Open</span>
+                    <span class="stat-value">$17,092.00</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">High (1Y)</span>
+                    <span class="stat-value up">$24,200.00</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Low (1Y)</span>
+                    <span class="stat-value down">$14,100.00</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Change</span>
+                    <span class="stat-value down">-$192.00 (-1.12%)</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Avg (1Y)</span>
+                    <span class="stat-value">$18,450.00</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Volatility</span>
+                    <span class="stat-value" style="color: #ffc107;">High</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- VARIANT C: Multi-line Overlay  -->
+    <!-- ============================== -->
+    <div style="margin-top: 48px;">
+        <span class="view-label desktop">Desktop — Variant C: All Commodities Overlay</span>
+
+        <div class="chart-panel">
+            <div class="chart-header">
+                <div class="chart-header-left">
+                    <span style="font-size: 14px; font-weight: 600; color: #fff;">All Commodities</span>
+                    <span style="font-size: 12px; color: #555;">Normalized % change</span>
+                </div>
+
+                <div class="chart-header-right">
+                    <div class="pill-group">
+                        <button class="pill active">Line</button>
+                        <button class="pill">Area</button>
+                    </div>
+                    <div class="time-pills">
+                        <button class="time-pill">30D</button>
+                        <button class="time-pill active">90D</button>
+                        <button class="time-pill">1Y</button>
+                        <button class="time-pill">ALL</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-body">
+                <div class="chart-area">
+                    <svg class="chart-svg" viewBox="0 0 1000 350" preserveAspectRatio="none">
+                        <line x1="0" y1="70" x2="1000" y2="70" class="chart-grid-line"/>
+                        <line x1="0" y1="175" x2="1000" y2="175" class="chart-grid-line" style="stroke: #2a2d3a;"/>
+                        <line x1="0" y1="280" x2="1000" y2="280" class="chart-grid-line"/>
+
+                        <text x="8" y="68" class="chart-label">+20%</text>
+                        <text x="8" y="173" class="chart-label">0%</text>
+                        <text x="8" y="278" class="chart-label">-20%</text>
+
+                        <!-- Copper (orange) -->
+                        <path d="M60,175 C140,165 200,150 280,130 C360,110 420,100 500,90 C580,80 640,95 720,105 C800,85 860,75 940,60"
+                              class="chart-line" stroke="#E87040" stroke-width="2.5"/>
+
+                        <!-- Nickel (green) -->
+                        <path d="M60,175 C140,180 200,200 280,220 C360,240 420,230 500,210 C580,190 640,185 720,195 C800,205 860,210 940,200"
+                              class="chart-line" stroke="#4CAF50" stroke-width="2.5"/>
+
+                        <!-- Aluminium (blue) -->
+                        <path d="M60,175 C140,172 200,165 280,155 C360,145 420,140 500,135 C580,130 640,128 720,125 C800,120 860,118 940,110"
+                              class="chart-line" stroke="#2196F3" stroke-width="2.5"/>
+
+                        <!-- End dots -->
+                        <circle cx="940" cy="60" r="4" fill="#E87040"/>
+                        <circle cx="940" cy="200" r="4" fill="#4CAF50"/>
+                        <circle cx="940" cy="110" r="4" fill="#2196F3"/>
+
+                        <!-- Zero line label -->
+                        <text x="960" y="63" class="chart-label" style="fill: #E87040; font-weight: 600;">+15.2%</text>
+                        <text x="960" y="203" class="chart-label" style="fill: #4CAF50; font-weight: 600;">-3.8%</text>
+                        <text x="960" y="113" class="chart-label" style="fill: #2196F3; font-weight: 600;">+8.1%</text>
+                    </svg>
+                </div>
+
+                <!-- Legend -->
+                <div class="chart-legend" style="padding: 0 20px;">
+                    <div class="legend-item active">
+                        <span class="swatch" style="background: #E87040;"></span>
+                        Copper · $12,147
+                    </div>
+                    <div class="legend-item active">
+                        <span class="swatch" style="background: #4CAF50;"></span>
+                        Nickel · $16,900
+                    </div>
+                    <div class="legend-item active">
+                        <span class="swatch" style="background: #2196F3;"></span>
+                        Aluminium · $3,505
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-row">
+                <div class="stat">
+                    <span class="stat-label">Best Performer</span>
+                    <span class="stat-value up">Copper +15.2%</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Worst Performer</span>
+                    <span class="stat-value down">Nickel -3.8%</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Correlation Cu/Ni</span>
+                    <span class="stat-value">0.42</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Correlation Cu/Al</span>
+                    <span class="stat-value">0.78</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- MOBILE                         -->
+    <!-- ============================== -->
+    <div style="margin-top: 48px;">
+        <span class="view-label mobile">Mobile — Compact Chart</span>
+
+        <div style="max-width: 375px; margin: 0 auto;">
+            <div class="chart-panel">
+                <div class="chart-header" style="flex-direction: column; align-items: flex-start; gap: 12px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                        <div class="commodity-tabs" style="gap: 6px;">
+                            <button class="commodity-tab active" style="padding: 4px 10px;">
+                                <span class="dot" style="background: #E87040; width: 6px; height: 6px;"></span>
+                                <span class="label" style="font-size: 11px;">Cu</span>
+                            </button>
+                            <button class="commodity-tab" style="padding: 4px 10px;">
+                                <span class="dot" style="background: #4CAF50; width: 6px; height: 6px;"></span>
+                                <span class="label" style="font-size: 11px;">Ni</span>
+                            </button>
+                            <button class="commodity-tab" style="padding: 4px 10px;">
+                                <span class="dot" style="background: #2196F3; width: 6px; height: 6px;"></span>
+                                <span class="label" style="font-size: 11px;">Al</span>
+                            </button>
+                        </div>
+                        <div class="time-pills" style="gap: 2px;">
+                            <button class="time-pill" style="padding: 3px 8px; font-size: 10px;">7D</button>
+                            <button class="time-pill active" style="padding: 3px 8px; font-size: 10px;">90D</button>
+                            <button class="time-pill" style="padding: 3px 8px; font-size: 10px;">1Y</button>
+                        </div>
+                    </div>
+                    <div class="price-display">
+                        <span class="price-value" style="font-size: 22px;">$12,147.01</span>
+                        <span class="price-change up" style="font-size: 12px;">+2.34%</span>
+                    </div>
+                </div>
+
+                <div class="chart-body" style="height: 200px; padding: 12px;">
+                    <svg class="chart-svg" viewBox="0 0 1000 350" preserveAspectRatio="none">
+                        <line x1="0" y1="120" x2="1000" y2="120" class="chart-grid-line"/>
+                        <line x1="0" y1="240" x2="1000" y2="240" class="chart-grid-line"/>
+
+                        <path d="M40,220 C120,210 200,180 300,150 C400,120 460,100 540,70 C620,40 680,60 760,90 C840,70 900,60 960,45 L960,320 L40,320 Z"
+                              fill="#E87040" class="chart-area-fill" style="opacity: 0.12;"/>
+                        <path d="M40,220 C120,210 200,180 300,150 C400,120 460,100 540,70 C620,40 680,60 760,90 C840,70 900,60 960,45"
+                              class="chart-line" stroke="#E87040"/>
+                        <circle cx="960" cy="45" r="4" fill="#E87040"/>
+                    </svg>
+                </div>
+
+                <div class="stats-row" style="gap: 12px; flex-wrap: wrap; padding: 10px 16px;">
+                    <div class="stat">
+                        <span class="stat-label">High</span>
+                        <span class="stat-value up" style="font-size: 12px;">$12,850</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Low</span>
+                        <span class="stat-value down" style="font-size: 12px;">$9,240</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Avg</span>
+                        <span class="stat-value" style="font-size: 12px;">$10,945</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Vol</span>
+                        <span class="stat-value" style="font-size: 12px; color: #ffc107;">High</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- Q&A Section                    -->
+    <!-- ============================== -->
+    <hr class="section-divider">
+    <span class="view-label qa">Design Decisions</span>
+    <p class="section-title">Q&A</p>
+
+    <div class="qa-grid">
+        <div class="qa-card">
+            <p class="qa-q">Why 3 chart variants?</p>
+            <p class="qa-a">Variant A (tabs) is best for focused single-commodity analysis. Variant B (dropdown) saves space when real estate is tight. Variant C (overlay) is for comparative analysis — judges love seeing all commodities at once with normalized % change.</p>
+        </div>
+        <div class="qa-card">
+            <p class="qa-q">What chart library?</p>
+            <p class="qa-a">Use <code>recharts</code> or <code>d3</code> with Next.js. Recharts is faster to implement (React-native), D3 gives more control. For hackathon: recharts. The SVGs in this mockup show the exact visual target.</p>
+        </div>
+        <div class="qa-card">
+            <p class="qa-q">Why pills for chart type?</p>
+            <p class="qa-a">Line = trend clarity. Area = volume/magnitude feeling. Candle = trader credibility (OHLC). Bar = discrete daily comparison. Toggle lets users pick their preferred view — judges see sophistication without extra code.</p>
+        </div>
+        <div class="qa-card">
+            <p class="qa-q">Why the stats row?</p>
+            <p class="qa-a">Open/High/Low/Change/Avg is the universal language of commodity trading. It anchors the chart in real numbers. Adding Volatility or Correlation in Variant C elevates it from "chart" to "analysis tool".</p>
+        </div>
+        <div class="qa-card">
+            <p class="qa-q">Data source?</p>
+            <p class="qa-a">Query <code>30100_prices</code> from Supabase. Filter by <code>commodity_slug</code> and date range. 1,580 rows per commodity = fast queries. Pre-compute Open/High/Low on the server or in a Supabase view.</p>
+        </div>
+        <div class="qa-card">
+            <p class="qa-q">Mobile approach?</p>
+            <p class="qa-a">Compact tabs (symbol only: Cu/Ni/Al), smaller chart height (200px vs 400px), fewer time range options (7D/90D/1Y), and wrapped stats row. Touch-friendly tap targets on all pills.</p>
+        </div>
+    </div>
+</div>
+</body>
+</html>
