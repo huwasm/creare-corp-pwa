@@ -9,26 +9,42 @@ const COMMODITY_COLORS: Record<string, { bg: string; fg: string; symbol: string 
   aluminium: { bg: "#2196F320", fg: "#2196F3", symbol: "Al" },
 };
 
-const SENTIMENT_KEYWORDS = {
-  positive: ["surge", "rise", "gain", "rally", "growth", "boost", "strong", "high", "record", "expand", "optimis", "bullish", "recovery", "demand"],
-  negative: ["fall", "drop", "decline", "loss", "cut", "weak", "low", "slump", "crash", "downturn", "pessimis", "bearish", "concern", "risk", "threat"],
-};
+/**
+ * Get sentiment — uses FinBERT from DB if available, falls back to keywords.
+ */
+function getSentiment(
+  title: string,
+  summary: string | null,
+  finbertLabel: string | null,
+  finbertScore: number | null
+): { label: string; color: string; score: number } {
+  // Use FinBERT if available
+  if (finbertLabel && finbertScore !== null) {
+    const score = finbertScore;
+    if (finbertLabel === "positive" && score > 0.5) return { label: "Very positive", color: "#4caf50", score };
+    if (finbertLabel === "positive") return { label: "Positive", color: "#8bc34a", score };
+    if (finbertLabel === "negative" && score < -0.5) return { label: "Very negative", color: "#ef5350", score };
+    if (finbertLabel === "negative") return { label: "Negative", color: "#ff9800", score };
+    return { label: "Neutral", color: "#ffc107", score: 0 };
+  }
 
-function getSentiment(title: string, summary: string | null): { label: string; color: string; score: number } {
+  // Keyword fallback for articles without FinBERT scores
+  const KEYWORDS_POS = ["surge", "rise", "gain", "rally", "growth", "boost", "strong", "high", "record", "bullish", "recovery"];
+  const KEYWORDS_NEG = ["fall", "drop", "decline", "loss", "cut", "weak", "low", "slump", "crash", "bearish", "risk", "threat"];
+
   const text = (title + " " + (summary ?? "")).toLowerCase();
-  let pos = 0;
-  let neg = 0;
-  SENTIMENT_KEYWORDS.positive.forEach((w) => { if (text.includes(w)) pos++; });
-  SENTIMENT_KEYWORDS.negative.forEach((w) => { if (text.includes(w)) neg++; });
+  let pos = 0, neg = 0;
+  KEYWORDS_POS.forEach((w) => { if (text.includes(w)) pos++; });
+  KEYWORDS_NEG.forEach((w) => { if (text.includes(w)) neg++; });
 
   const total = pos + neg || 1;
   const score = (pos - neg) / total;
 
   if (score > 0.3) return { label: "Very positive", color: "#4caf50", score };
-  if (score > 0) return { label: "Slightly positive", color: "#8bc34a", score };
+  if (score > 0) return { label: "Positive", color: "#8bc34a", score };
   if (score < -0.3) return { label: "Negative", color: "#ef5350", score };
   if (score < 0) return { label: "Slightly negative", color: "#ff9800", score };
-  return { label: "Neutral", color: "#ffc107", score };
+  return { label: "Neutral", color: "#ffc107", score: 0 };
 }
 
 function getEventTypes(title: string): { label: string; type: "gain" | "loss" | "flat" }[] {
@@ -127,7 +143,7 @@ export function EventFeed({ news, commodityFilter, onFilterChange }: Props) {
           </thead>
           <tbody>
             {filtered.slice(0, 15).map((n) => {
-              const sentiment = getSentiment(n.title, n.summary);
+              const sentiment = getSentiment(n.title, n.summary, n.finbert_label, n.finbert_sentiment_score);
               const eventTypes = getEventTypes(n.title);
               const source = getSource(n.url);
               const dateStr = new Date(n.date).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" });

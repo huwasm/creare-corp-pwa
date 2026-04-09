@@ -40,7 +40,19 @@ const SENTIMENT_WORDS = {
   negative: ["fall", "drop", "decline", "loss", "cut", "weak", "low", "slump", "crash", "bearish", "risk", "threat"],
 };
 
-function getSentiment(title: string): { label: string; color: string; arrow: string } {
+function getSentiment(
+  title: string,
+  finbertLabel: string | null,
+  finbertScore: number | null
+): { label: string; color: string; arrow: string } {
+  // Use FinBERT if available
+  if (finbertLabel && finbertScore !== null) {
+    if (finbertLabel === "positive") return { label: "Positive", color: "#4caf50", arrow: "▲" };
+    if (finbertLabel === "negative") return { label: "Negative", color: "#ef5350", arrow: "▼" };
+    return { label: "Neutral", color: "#ffc107", arrow: "●" };
+  }
+
+  // Keyword fallback
   const t = title.toLowerCase();
   let pos = 0, neg = 0;
   SENTIMENT_WORDS.positive.forEach((w) => { if (t.includes(w)) pos++; });
@@ -333,7 +345,7 @@ export function ChatPanel({ activeCommodity, commodityName, selectedDate, dateCl
 
 /** Compact news card inside chat */
 function NewsCard({ news, rank }: { news: NewsRow; rank: number }) {
-  const sentiment = getSentiment(news.title);
+  const sentiment = getSentiment(news.title, news.finbert_label, news.finbert_sentiment_score);
   return (
     <div className="flex items-start gap-2 rounded-lg bg-[#161822] border border-[#2a2d3a] px-3 py-2 hover:border-[#3a3d4a] transition-colors">
       <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded text-[9px] font-bold text-gray-600">

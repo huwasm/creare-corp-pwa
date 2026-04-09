@@ -26,6 +26,8 @@ export type NewsRow = {
   url: string | null;
   summary: string | null;
   impacted_commodities: string[];
+  finbert_label: string | null;
+  finbert_sentiment_score: number | null;
 };
 
 export async function fetchCommodities(supabase: SupabaseClient) {
@@ -118,7 +120,7 @@ export async function fetchNews(
 ) {
   let query = supabase
     .from("30200_news")
-    .select("id, date, title, url, summary, impacted_commodities")
+    .select("id, date, title, url, summary, impacted_commodities, finbert_label, finbert_sentiment_score")
     .order("date", { ascending: false })
     .limit(limit);
 
@@ -188,7 +190,7 @@ export async function fetchNewsByDate(
 
   let query = supabase
     .from("30200_news")
-    .select("id, date, title, url, summary, impacted_commodities")
+    .select("id, date, title, url, summary, impacted_commodities, finbert_label, finbert_sentiment_score")
     .gte("date", dayBefore.toISOString().split("T")[0])
     .lte("date", dayAfter.toISOString().split("T")[0])
     .order("date", { ascending: false })
