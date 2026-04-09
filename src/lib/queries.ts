@@ -169,3 +169,35 @@ export function getStatusBadge(trend14d: number, volatility30d: number): { label
   if (trend14d < -3) return { label: "Bearish", type: "sell" };
   return { label: "Wait!", type: "wait" };
 }
+
+/**
+ * Fetch news articles for a specific date (±1 day to catch timezone edge cases).
+ */
+export async function fetchNewsByDate(
+  supabase: SupabaseClient,
+  date: string,
+  commoditySlug: string | null,
+  limit: number = 20
+) {
+  // Date range: target date ±1 day
+  const d = new Date(date);
+  const dayBefore = new Date(d);
+  dayBefore.setDate(d.getDate() - 1);
+  const dayAfter = new Date(d);
+  dayAfter.setDate(d.getDate() + 1);
+
+  let query = supabase
+    .from("30200_news")
+    .select("id, date, title, url, summary, impacted_commodities")
+    .gte("date", dayBefore.toISOString().split("T")[0])
+    .lte("date", dayAfter.toISOString().split("T")[0])
+    .order("date", { ascending: false })
+    .limit(limit);
+
+  if (commoditySlug) {
+    query = query.contains("impacted_commodities", [commoditySlug.replace("_lme", "")]);
+  }
+
+  const { data } = await query;
+  return (data ?? []) as NewsRow[];
+}

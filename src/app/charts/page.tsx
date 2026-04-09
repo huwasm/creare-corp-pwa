@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { CommodityCards } from "@/components/dashboard/CommodityCards";
 import { PriceChart } from "@/components/dashboard/PriceChart";
 import { OverlayChart } from "@/components/dashboard/OverlayChart";
 import { EventFeed } from "@/components/dashboard/EventFeed";
+import { DateEvents } from "@/components/dashboard/DateEvents";
 import { createClient } from "@/lib/supabase/client";
 import {
   fetchCommodities,
@@ -32,9 +34,13 @@ export default function ChartsPage() {
   const [loading, setLoading] = useState(true);
   const [loadingOverlay, setLoadingOverlay] = useState(false);
 
+  // 3-column layout state
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
   const supabase = createClient();
 
-  // Initial load — 90d for cards
+  // Initial load
   useEffect(() => {
     async function load() {
       const [comms, allPrices, articles] = await Promise.all([
@@ -42,10 +48,8 @@ export default function ChartsPage() {
         fetchAllLatestPrices(supabase, 90),
         fetchNews(supabase, null, 30),
       ]);
-
       setCommodities(comms);
       setNews(articles);
-
       const grouped: Record<string, PriceRow[]> = {};
       allPrices.forEach((p) => {
         if (!grouped[p.commodity_slug]) grouped[p.commodity_slug] = [];
@@ -57,14 +61,14 @@ export default function ChartsPage() {
     load();
   }, []);
 
-  // Load single commodity full history for chart view
+  // Load single commodity full history
   useEffect(() => {
     if (viewMode === "chart") {
       fetchPrices(supabase, activeCommodity, 9999).then(setChartPrices);
     }
   }, [viewMode, activeCommodity]);
 
-  // Load ALL commodities full history for overlay view
+  // Load all commodities for overlay
   useEffect(() => {
     if (viewMode === "overlay" && Object.keys(fullPriceData).length === 0) {
       setLoadingOverlay(true);
@@ -93,23 +97,30 @@ export default function ChartsPage() {
     setViewMode("chart");
   }
 
+  function handleSidebarViewChange(view: string) {
+    if (view === "overview") setViewMode("cards");
+    else if (view === "charts") setViewMode("chart");
+  }
+
   if (loading) {
     return (
-      <>
+      <div className="flex h-screen flex-col">
         <Header commodity={activeCommodity} onCommodityChange={setActiveCommodity} role={role} onRoleChange={setRole} />
         <main className="flex flex-1 items-center justify-center">
           <div className="text-sm text-gray-600">Loading...</div>
         </main>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
+    <div className="flex h-screen flex-col overflow-hidden">
+      {/* Header — full width */}
       <Header
         commodity={activeCommodity}
         onCommodityChange={(slug) => {
           setActiveCommodity(slug);
+          setSelectedDate(null);
           if (viewMode === "chart") {
             fetchPrices(supabase, slug, 9999).then(setChartPrices);
           }
@@ -118,98 +129,151 @@ export default function ChartsPage() {
         onRoleChange={setRole}
       />
 
-      <main className="flex-1 px-5 py-6">
-        <div className="mx-auto max-w-[1400px] space-y-5">
-          {/* Welcome bar + view toggle */}
-          <div className="flex items-center justify-between rounded-[14px] border border-[#2a2d3a] bg-[#1a1d28] px-6 py-4">
-            <div>
-              <h2 className="text-base font-semibold text-white">
-                Welcome Back! What&apos;s your goal today?
-              </h2>
-              <p className="mt-0.5 text-xs text-gray-600">
-                LME Metals Monitor — {new Date().toLocaleDateString("en-GB")}
+      {/* 3-column body */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Column 1: Sidebar */}
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+          activeView={viewMode === "cards" ? "overview" : viewMode === "chart" || viewMode === "overlay" ? "charts" : "overview"}
+          onViewChange={handleSidebarViewChange}
+        />
+
+        {/* Column 2: Main content */}
+        <main className="flex-1 overflow-y-auto px-5 py-5">
+          <div className="space-y-5">
+            {/* Welcome bar + view toggle */}
+            <div className="flex items-center justify-between rounded-[14px] border border-[#2a2d3a] bg-[#1a1d28] px-5 py-3">
+              <div>
+                <h2 className="text-sm font-semibold text-white">
+                  Welcome Back! What&apos;s your goal today?
+                </h2>
+                <p className="mt-0.5 text-[11px] text-gray-600">
+                  LME Metals Monitor — {new Date().toLocaleDateString("en-GB")}
+                </p>
+              </div>
+              <div className="flex overflow-hidden rounded-lg border border-[#3a3d4a] bg-[#252838]">
+                <button
+                  onClick={() => { setViewMode("cards"); setSelectedDate(null); }}
+                  className={`px-3.5 py-1.5 text-xs font-medium transition-colors ${
+                    viewMode === "cards" ? "bg-[#c9a44a] font-semibold text-[#0f1117]" : "text-gray-500 hover:text-gray-300"
+                  }`}
+                >
+                  ▦ Overview
+                </button>
+                <button
+                  onClick={() => setViewMode("chart")}
+                  className={`px-3.5 py-1.5 text-xs font-medium transition-colors ${
+                    viewMode === "chart" ? "bg-[#c9a44a] font-semibold text-[#0f1117]" : "text-gray-500 hover:text-gray-300"
+                  }`}
+                >
+                  📈 Single
+                </button>
+                <button
+                  onClick={() => setViewMode("overlay")}
+                  className={`px-3.5 py-1.5 text-xs font-medium transition-colors ${
+                    viewMode === "overlay" ? "bg-[#c9a44a] font-semibold text-[#0f1117]" : "text-gray-500 hover:text-gray-300"
+                  }`}
+                >
+                  📊 Compare
+                </button>
+              </div>
+            </div>
+
+            {/* Cards View */}
+            {viewMode === "cards" && (
+              <CommodityCards
+                commodities={commodities}
+                priceData={priceData}
+                activeCommodity={activeCommodity}
+                onSelect={handleCardSelect}
+              />
+            )}
+
+            {/* Single Chart View */}
+            {viewMode === "chart" && activeComm && (
+              <>
+                <div className="flex gap-2">
+                  {commodities.map((c) => (
+                    <button
+                      key={c.slug}
+                      onClick={() => { setActiveCommodity(c.slug); setSelectedDate(null); }}
+                      className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                        c.slug === activeCommodity
+                          ? "border-[#c9a44a] bg-[#252838] text-white"
+                          : "border-[#2a2d3a] text-gray-500 hover:border-[#3a3d4a] hover:text-gray-300"
+                      }`}
+                    >
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c.color_hex }} />
+                      {c.symbol} — {c.name}
+                    </button>
+                  ))}
+                </div>
+                <PriceChart
+                  commodity={activeComm}
+                  prices={chartPrices}
+                  onClose={() => { setViewMode("cards"); setSelectedDate(null); }}
+                  onDateSelect={setSelectedDate}
+                />
+              </>
+            )}
+
+            {/* Overlay Chart View */}
+            {viewMode === "overlay" && (
+              loadingOverlay ? (
+                <div className="flex h-[400px] items-center justify-center rounded-[14px] border border-[#2a2d3a] bg-[#1a1d28]">
+                  <span className="text-sm text-gray-600">Loading all commodities...</span>
+                </div>
+              ) : (
+                <OverlayChart
+                  commodities={commodities}
+                  allPrices={fullPriceData}
+                  onClose={() => setViewMode("cards")}
+                />
+              )
+            )}
+
+            {/* Event Feed */}
+            <EventFeed news={news} commodityFilter={newsFilter} onFilterChange={setNewsFilter} />
+          </div>
+        </main>
+
+        {/* Column 3: Right panel — events for selected date + chat placeholder */}
+        <aside className="flex w-[380px] shrink-0 flex-col overflow-hidden border-l border-[#2a2d3a] bg-[#0f1117]">
+          {/* Top: Date Events */}
+          <div className="flex-1 overflow-hidden">
+            <DateEvents
+              selectedDate={selectedDate}
+              activeCommodity={activeCommodity}
+              commodityName={activeComm?.name ?? ""}
+            />
+          </div>
+
+          {/* Bottom: Chat placeholder */}
+          <div className="shrink-0 border-t border-[#2a2d3a]">
+            <div className="px-4 py-3">
+              <h3 className="text-sm font-semibold text-white">Chat</h3>
+              <p className="mt-1 text-[10px] text-gray-600">
+                AI analysis — coming after embeddings complete
               </p>
             </div>
-            <div className="flex overflow-hidden rounded-lg border border-[#3a3d4a] bg-[#252838]">
+            <div className="flex items-center gap-2 border-t border-[#1f2233] px-4 py-3">
+              <input
+                type="text"
+                placeholder="Ask about this commodity..."
+                disabled
+                className="flex-1 rounded-lg border border-[#3a3d4a] bg-[#252838] px-3 py-2 text-xs text-gray-500 outline-none placeholder:text-gray-700"
+              />
               <button
-                onClick={() => setViewMode("cards")}
-                className={`px-4 py-2 text-xs font-medium transition-colors ${
-                  viewMode === "cards" ? "bg-[#c9a44a] font-semibold text-[#0f1117]" : "text-gray-500 hover:text-gray-300"
-                }`}
+                disabled
+                className="rounded-lg bg-[#252838] px-3 py-2 text-xs text-gray-600"
               >
-                ▦ Overview
-              </button>
-              <button
-                onClick={() => setViewMode("chart")}
-                className={`px-4 py-2 text-xs font-medium transition-colors ${
-                  viewMode === "chart" ? "bg-[#c9a44a] font-semibold text-[#0f1117]" : "text-gray-500 hover:text-gray-300"
-                }`}
-              >
-                📈 Single
-              </button>
-              <button
-                onClick={() => setViewMode("overlay")}
-                className={`px-4 py-2 text-xs font-medium transition-colors ${
-                  viewMode === "overlay" ? "bg-[#c9a44a] font-semibold text-[#0f1117]" : "text-gray-500 hover:text-gray-300"
-                }`}
-              >
-                📊 Compare
+                Send
               </button>
             </div>
           </div>
-
-          {/* Cards View */}
-          {viewMode === "cards" && (
-            <CommodityCards
-              commodities={commodities}
-              priceData={priceData}
-              activeCommodity={activeCommodity}
-              onSelect={handleCardSelect}
-            />
-          )}
-
-          {/* Single Chart View */}
-          {viewMode === "chart" && activeComm && (
-            <>
-              <div className="flex gap-3">
-                {commodities.map((c) => (
-                  <button
-                    key={c.slug}
-                    onClick={() => setActiveCommodity(c.slug)}
-                    className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-xs font-medium transition-colors ${
-                      c.slug === activeCommodity
-                        ? "border-[#c9a44a] bg-[#252838] text-white"
-                        : "border-[#2a2d3a] text-gray-500 hover:border-[#3a3d4a] hover:text-gray-300"
-                    }`}
-                  >
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c.color_hex }} />
-                    {c.symbol} — {c.name}
-                  </button>
-                ))}
-              </div>
-              <PriceChart commodity={activeComm} prices={chartPrices} onClose={() => setViewMode("cards")} />
-            </>
-          )}
-
-          {/* Overlay Chart View — All 3 commodities */}
-          {viewMode === "overlay" && (
-            loadingOverlay ? (
-              <div className="flex h-[400px] items-center justify-center rounded-[14px] border border-[#2a2d3a] bg-[#1a1d28]">
-                <span className="text-sm text-gray-600">Loading all commodities...</span>
-              </div>
-            ) : (
-              <OverlayChart
-                commodities={commodities}
-                allPrices={fullPriceData}
-                onClose={() => setViewMode("cards")}
-              />
-            )
-          )}
-
-          {/* Event Feed */}
-          <EventFeed news={news} commodityFilter={newsFilter} onFilterChange={setNewsFilter} />
-        </div>
-      </main>
-    </>
+        </aside>
+      </div>
+    </div>
   );
 }

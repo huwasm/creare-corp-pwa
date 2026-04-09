@@ -24,6 +24,7 @@ type Props = {
   commodity: Commodity;
   prices: PriceRow[];
   onClose: () => void;
+  onDateSelect?: (date: string) => void;
 };
 
 const TIME_RANGES = [
@@ -34,7 +35,7 @@ const TIME_RANGES = [
   { label: "ALL", days: 9999 },
 ];
 
-export function PriceChart({ commodity, prices, onClose }: Props) {
+export function PriceChart({ commodity, prices, onClose, onDateSelect }: Props) {
   const [chartType, setChartType] = useState<ChartType>("line");
   const [timeRange, setTimeRange] = useState(90);
 
@@ -144,7 +145,7 @@ export function PriceChart({ commodity, prices, onClose }: Props) {
       <div className="h-[360px] px-5 py-4">
         <ResponsiveContainer width="100%" height="100%">
           {chartType === "area" ? (
-            <AreaChart data={chartData}>
+            <AreaChart data={chartData} onClick={(e: Record<string, unknown>) => { const p = (e?.activePayload as Array<{ payload: { date: string } }>) ?? []; if (p[0]?.payload?.date) onDateSelect?.(p[0].payload.date); }}>
               <defs>
                 <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={commodity.color_hex} stopOpacity={0.2} />
@@ -167,7 +168,7 @@ export function PriceChart({ commodity, prices, onClose }: Props) {
               <Area type="monotone" dataKey="price" stroke={commodity.color_hex} strokeWidth={2} fill="url(#areaGrad)" dot={false} isAnimationActive={false} />
             </AreaChart>
           ) : chartType === "bar" ? (
-            <BarChart data={chartData}>
+            <BarChart data={chartData} onClick={(e: Record<string, unknown>) => { const p = (e?.activePayload as Array<{ payload: { date: string } }>) ?? []; if (p[0]?.payload?.date) onDateSelect?.(p[0].payload.date); }}>
               <CartesianGrid stroke="#1f2233" vertical={false} />
               <XAxis dataKey="label" tick={{ fill: "#444", fontSize: 11 }} tickLine={false} axisLine={false} interval={tickInterval} />
               <YAxis domain={["auto", "auto"]} tick={{ fill: "#444", fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} width={60} />
@@ -183,7 +184,7 @@ export function PriceChart({ commodity, prices, onClose }: Props) {
               <Bar dataKey="price" fill={commodity.color_hex} opacity={0.8} radius={[2, 2, 0, 0]} isAnimationActive={false} />
             </BarChart>
           ) : (
-            <LineChart data={chartData}>
+            <LineChart data={chartData} onClick={(e: Record<string, unknown>) => { const p = (e?.activePayload as Array<{ payload: { date: string } }>) ?? []; if (p[0]?.payload?.date) onDateSelect?.(p[0].payload.date); }} style={{ cursor: "crosshair" }}>
               <CartesianGrid stroke="#1f2233" vertical={false} />
               <XAxis dataKey="label" tick={{ fill: "#444", fontSize: 11 }} tickLine={false} axisLine={false} interval={tickInterval} />
               <YAxis domain={["auto", "auto"]} tick={{ fill: "#444", fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} width={60} />

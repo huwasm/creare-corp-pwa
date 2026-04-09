@@ -245,9 +245,13 @@ async function main() {
         `   ✅ ${embedded}/${toEmbed.length} embedded (${((embedded / toEmbed.length) * 100).toFixed(1)}%)\r`
       );
 
-      // Rate limit pause
+      // Free tier: 100 requests/min. Wait 35s between batches to stay safe.
       if (i + EMBED_BATCH < toEmbed.length) {
-        await new Promise((r) => setTimeout(r, 150));
+        const waitSec = 35;
+        const remaining = toEmbed.length - embedded;
+        const eta = Math.ceil((remaining / EMBED_BATCH) * waitSec / 60);
+        process.stdout.write(`\n   ⏳ Waiting ${waitSec}s for rate limit (ETA: ~${eta} min)...`);
+        await new Promise((r) => setTimeout(r, waitSec * 1000));
       }
     } catch (err) {
       console.error(`\n   ❌ Batch ${i / EMBED_BATCH + 1} failed:`, err);
