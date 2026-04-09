@@ -38,22 +38,30 @@ export function PriceChart({ commodity, prices, onClose }: Props) {
   const [chartType, setChartType] = useState<ChartType>("line");
   const [timeRange, setTimeRange] = useState(90);
 
+  // Filter from the END of available data (last data point), not from today
   const filteredPrices =
     timeRange >= 9999
       ? prices
-      : prices.slice(-timeRange);
+      : prices.slice(Math.max(0, prices.length - timeRange));
 
   const signals = computeSignals(filteredPrices);
+
+  // Smart date labels based on time range
+  const formatLabel = (dateStr: string) => {
+    const d = new Date(dateStr);
+    if (timeRange >= 9999 || timeRange >= 365) {
+      return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    }
+    if (timeRange >= 30) {
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    }
+    return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  };
 
   const chartData = filteredPrices.map((p) => ({
     date: p.date,
     price: p.price,
-    label:
-      timeRange >= 365
-        ? new Date(p.date).toLocaleDateString("en-US", { month: "short", year: "numeric" })
-        : timeRange >= 90
-          ? new Date(p.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })
-          : new Date(p.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    label: formatLabel(p.date),
   }));
 
   // Show ~8 ticks on x-axis

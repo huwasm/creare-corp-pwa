@@ -41,37 +41,72 @@ export async function fetchPrices(
   slug: string,
   days: number
 ) {
-  let query = supabase
-    .from("30100_prices")
-    .select("date, commodity_slug, price")
-    .eq("commodity_slug", slug)
-    .order("date", { ascending: true })
-    .limit(2000);
+  // Supabase default max is 1000 rows — paginate for full history
+  const allRows: PriceRow[] = [];
+  const PAGE = 1000;
+  let from = 0;
+  let done = false;
 
-  if (days < 9999) {
-    const since = new Date();
-    since.setDate(since.getDate() - days);
-    query = query.gte("date", since.toISOString().split("T")[0]);
+  while (!done) {
+    let query = supabase
+      .from("30100_prices")
+      .select("date, commodity_slug, price")
+      .eq("commodity_slug", slug)
+      .order("date", { ascending: true })
+      .range(from, from + PAGE - 1);
+
+    if (days < 9999) {
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+      query = query.gte("date", since.toISOString().split("T")[0]);
+    }
+
+    const { data } = await query;
+    const rows = (data ?? []) as PriceRow[];
+    allRows.push(...rows);
+
+    if (rows.length < PAGE) {
+      done = true;
+    } else {
+      from += PAGE;
+    }
   }
 
-  const { data } = await query;
-  return (data ?? []) as PriceRow[];
+  return allRows;
 }
 
 export async function fetchAllLatestPrices(supabase: SupabaseClient, days: number) {
-  let query = supabase
-    .from("30100_prices")
-    .select("date, commodity_slug, price")
-    .order("date", { ascending: true })
-    .limit(5000);
+  // Paginate — up to 5000 rows (3 commodities × 1580)
+  const allRows: PriceRow[] = [];
+  const PAGE = 1000;
+  let from = 0;
+  let done = false;
 
-  if (days < 9999) {
-    const since = new Date();
-    since.setDate(since.getDate() - days);
-    query = query.gte("date", since.toISOString().split("T")[0]);
+  while (!done) {
+    let query = supabase
+      .from("30100_prices")
+      .select("date, commodity_slug, price")
+      .order("date", { ascending: true })
+      .range(from, from + PAGE - 1);
+
+    if (days < 9999) {
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+      query = query.gte("date", since.toISOString().split("T")[0]);
+    }
+
+    const { data } = await query;
+    const rows = (data ?? []) as PriceRow[];
+    allRows.push(...rows);
+
+    if (rows.length < PAGE) {
+      done = true;
+    } else {
+      from += PAGE;
+    }
   }
 
-  const { data } = await query;
+  const data = allRows;
 
   return (data ?? []) as PriceRow[];
 }
