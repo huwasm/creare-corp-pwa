@@ -30,15 +30,18 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files — NEVER commit secrets
-.env
-.env.local
+# env files — private secrets only
+.env.secret
 .env.development.local
 .env.test.local
 .env.production.local
 .env.production
-# .env.example is committed (template without secrets)
-!.env.example
+# .env.local is committed (shared team keys, no secrets)
+# .env.example is committed (template)
+
+# claude skills & commands (local dev tools, not committed)
+.claude/skills/
+.claude/commands/
 
 # vercel
 .vercel
