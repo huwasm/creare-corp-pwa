@@ -49,8 +49,12 @@ export default function ChartsPage() {
 
   // Handle date selection — works even if same date clicked again
   const handleDateSelect = useCallback((date: string) => {
-    setSelectedDate(date);
-    setDateClickCount((c) => c + 1);
+    // Force re-render by briefly clearing, then setting
+    setSelectedDate(null);
+    setTimeout(() => {
+      setSelectedDate(date);
+      setDateClickCount((c) => c + 1);
+    }, 0);
   }, []);
 
   // Resize handle logic
