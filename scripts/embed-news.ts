@@ -245,9 +245,9 @@ async function main() {
         `   ✅ ${embedded}/${toEmbed.length} embedded (${((embedded / toEmbed.length) * 100).toFixed(1)}%)\r`
       );
 
-      // Free tier: 100 requests/min. Wait 35s between batches to stay safe.
+      // Paid tier: 1500 RPM. Short pause to avoid bursts.
       if (i + EMBED_BATCH < toEmbed.length) {
-        const waitSec = 35;
+        const waitSec = 5;
         const remaining = toEmbed.length - embedded;
         const eta = Math.ceil((remaining / EMBED_BATCH) * waitSec / 60);
         process.stdout.write(`\n   ⏳ Waiting ${waitSec}s for rate limit (ETA: ~${eta} min)...`);
