@@ -161,9 +161,10 @@ export function OverlayChart({ commodities, allPrices, onClose, onDateSelect }: 
       </div>
 
       {/* Chart */}
-      <div className="h-[400px] px-5 py-4">
+      <div className="h-[400px] px-5 py-4" style={{ cursor: "crosshair" }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} onClick={(e: Record<string, unknown>) => { const p = (e?.activePayload as Array<{ payload: { date: string } }>) ?? []; if (p[0]?.payload?.date) onDateSelect?.(p[0].payload.date); }} style={{ cursor: "crosshair" }}>
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          <LineChart data={chartData} onClick={(state: any) => { if (state?.activePayload?.[0]?.payload?.date) onDateSelect?.(state.activePayload[0].payload.date); }}>
             <CartesianGrid stroke="#1f2233" vertical={false} />
             <XAxis
               dataKey="label"

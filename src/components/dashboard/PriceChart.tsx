@@ -68,6 +68,13 @@ export function PriceChart({ commodity, prices, onClose, onDateSelect }: Props) 
   // Show ~8 ticks on x-axis
   const tickInterval = Math.max(1, Math.floor(chartData.length / 8));
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function handleChartClick(state: any) {
+    if (state?.activePayload?.[0]?.payload?.date) {
+      onDateSelect?.(state.activePayload[0].payload.date);
+    }
+  }
+
   return (
     <div className="overflow-hidden rounded-[14px] border border-[#c9a44a] bg-[#1a1d28]">
       {/* Header */}
@@ -142,10 +149,10 @@ export function PriceChart({ commodity, prices, onClose, onDateSelect }: Props) 
       </div>
 
       {/* Chart */}
-      <div className="h-[360px] px-5 py-4">
+      <div className="h-[360px] px-5 py-4" style={{ cursor: "crosshair" }}>
         <ResponsiveContainer width="100%" height="100%">
           {chartType === "area" ? (
-            <AreaChart data={chartData} onClick={(e: Record<string, unknown>) => { const p = (e?.activePayload as Array<{ payload: { date: string } }>) ?? []; if (p[0]?.payload?.date) onDateSelect?.(p[0].payload.date); }}>
+            <AreaChart data={chartData} onClick={handleChartClick}>
               <defs>
                 <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={commodity.color_hex} stopOpacity={0.2} />
@@ -155,50 +162,26 @@ export function PriceChart({ commodity, prices, onClose, onDateSelect }: Props) 
               <CartesianGrid stroke="#1f2233" vertical={false} />
               <XAxis dataKey="label" tick={{ fill: "#444", fontSize: 11 }} tickLine={false} axisLine={false} interval={tickInterval} />
               <YAxis domain={["auto", "auto"]} tick={{ fill: "#444", fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} width={60} />
-              <Tooltip
-                contentStyle={{ background: "#252838", border: "1px solid #3a3d4a", borderRadius: 8, fontSize: 12 }}
-                labelStyle={{ color: "#888" }}
-                labelFormatter={(_, payload) => {
-                  const d = payload?.[0]?.payload?.date;
-                  return d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
-                }}
-                formatter={(v) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 })}`, "Price"]}
-              />
+              <Tooltip content={<ChartTooltip />} />
               <ReferenceLine y={signals.avg} stroke="#3a3d4a" strokeDasharray="4 4" />
-              <Area type="monotone" dataKey="price" stroke={commodity.color_hex} strokeWidth={2} fill="url(#areaGrad)" dot={false} isAnimationActive={false} />
+              <Area type="monotone" dataKey="price" stroke={commodity.color_hex} strokeWidth={2} fill="url(#areaGrad)" dot={false} isAnimationActive={false} activeDot={{ r: 5, stroke: "#c9a44a", strokeWidth: 2, fill: "#0f1117" }} />
             </AreaChart>
           ) : chartType === "bar" ? (
-            <BarChart data={chartData} onClick={(e: Record<string, unknown>) => { const p = (e?.activePayload as Array<{ payload: { date: string } }>) ?? []; if (p[0]?.payload?.date) onDateSelect?.(p[0].payload.date); }}>
+            <BarChart data={chartData} onClick={handleChartClick}>
               <CartesianGrid stroke="#1f2233" vertical={false} />
               <XAxis dataKey="label" tick={{ fill: "#444", fontSize: 11 }} tickLine={false} axisLine={false} interval={tickInterval} />
               <YAxis domain={["auto", "auto"]} tick={{ fill: "#444", fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} width={60} />
-              <Tooltip
-                contentStyle={{ background: "#252838", border: "1px solid #3a3d4a", borderRadius: 8, fontSize: 12 }}
-                labelStyle={{ color: "#888" }}
-                labelFormatter={(_, payload) => {
-                  const d = payload?.[0]?.payload?.date;
-                  return d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
-                }}
-                formatter={(v) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 })}`, "Price"]}
-              />
+              <Tooltip content={<ChartTooltip />} />
               <Bar dataKey="price" fill={commodity.color_hex} opacity={0.8} radius={[2, 2, 0, 0]} isAnimationActive={false} />
             </BarChart>
           ) : (
-            <LineChart data={chartData} onClick={(e: Record<string, unknown>) => { const p = (e?.activePayload as Array<{ payload: { date: string } }>) ?? []; if (p[0]?.payload?.date) onDateSelect?.(p[0].payload.date); }} style={{ cursor: "crosshair" }}>
+            <LineChart data={chartData} onClick={handleChartClick}>
               <CartesianGrid stroke="#1f2233" vertical={false} />
               <XAxis dataKey="label" tick={{ fill: "#444", fontSize: 11 }} tickLine={false} axisLine={false} interval={tickInterval} />
               <YAxis domain={["auto", "auto"]} tick={{ fill: "#444", fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} width={60} />
-              <Tooltip
-                contentStyle={{ background: "#252838", border: "1px solid #3a3d4a", borderRadius: 8, fontSize: 12 }}
-                labelStyle={{ color: "#888" }}
-                labelFormatter={(_, payload) => {
-                  const d = payload?.[0]?.payload?.date;
-                  return d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
-                }}
-                formatter={(v) => [`$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 })}`, "Price"]}
-              />
+              <Tooltip content={<ChartTooltip />} />
               <ReferenceLine y={signals.avg} stroke="#3a3d4a" strokeDasharray="4 4" />
-              <Line type="monotone" dataKey="price" stroke={commodity.color_hex} strokeWidth={2} dot={false} isAnimationActive={false} />
+              <Line type="monotone" dataKey="price" stroke={commodity.color_hex} strokeWidth={2} dot={false} isAnimationActive={false} activeDot={{ r: 5, stroke: "#c9a44a", strokeWidth: 2, fill: "#0f1117" }} />
             </LineChart>
           )}
         </ResponsiveContainer>
@@ -213,6 +196,18 @@ export function PriceChart({ commodity, prices, onClose, onDateSelect }: Props) 
         <Stat label="Avg" value={`$${signals.avg.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
         <Stat label="Volatility" value={`${signals.volatility30d.toFixed(1)}%`} type={signals.volatility30d > 20 ? "warn" : "neutral"} />
       </div>
+    </div>
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ChartTooltip({ active, payload }: any) {
+  if (!active || !payload?.[0]) return null;
+  const { date, price } = payload[0].payload;
+  return (
+    <div className="rounded-lg border border-[#3a3d4a] bg-[#252838] px-3 py-2 text-xs shadow-lg">
+      <p className="text-gray-400">{new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+      <p className="font-semibold text-[#E87040]">Price : ${Number(price).toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
     </div>
   );
 }
