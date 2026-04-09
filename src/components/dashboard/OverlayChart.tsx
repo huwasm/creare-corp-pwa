@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -88,6 +88,25 @@ export function OverlayChart({ commodities, allPrices, onClose, onDateSelect }: 
 
   const tickInterval = Math.max(1, Math.floor(chartData.length / 8));
 
+  // Ref-based click: track last hovered date from Tooltip
+  const hoveredDateRef = useRef<string | null>(null);
+
+  // Clear stale hover on view/time changes
+  useEffect(() => {
+    hoveredDateRef.current = null;
+  }, [viewMode, timeRange]);
+
+  function handleChartAreaClick() {
+    const date = hoveredDateRef.current;
+    if (date) {
+      onDateSelect?.(date);
+    }
+  }
+
+  function handleChartMouseLeave() {
+    hoveredDateRef.current = null;
+  }
+
   // Compute current % changes for header
   const changes = commodities.map((c) => {
     const prices = allPrices[c.slug] ?? [];
@@ -161,10 +180,14 @@ export function OverlayChart({ commodities, allPrices, onClose, onDateSelect }: 
       </div>
 
       {/* Chart */}
-      <div className="h-[400px] px-5 py-4" style={{ cursor: "crosshair" }}>
+      <div
+        className="h-[400px] px-5 py-4"
+        style={{ cursor: "crosshair" }}
+        onClick={handleChartAreaClick}
+        onMouseLeave={handleChartMouseLeave}
+      >
         <ResponsiveContainer width="100%" height="100%">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <LineChart data={chartData} onClick={(state: any) => { if (state?.activePayload?.[0]?.payload?.date) onDateSelect?.(state.activePayload[0].payload.date); }}>
+          <LineChart data={chartData}>
             <CartesianGrid stroke="#1f2233" vertical={false} />
             <XAxis
               dataKey="label"
@@ -194,6 +217,12 @@ export function OverlayChart({ commodities, allPrices, onClose, onDateSelect }: 
               labelStyle={{ color: "#888" }}
               labelFormatter={(_, payload) => {
                 const d = payload?.[0]?.payload?.date;
+                // Update hovered date ref
+                if (d) {
+                  hoveredDateRef.current = d;
+                } else {
+                  hoveredDateRef.current = null;
+                }
                 return d
                   ? new Date(d).toLocaleDateString("en-US", {
                       month: "short",

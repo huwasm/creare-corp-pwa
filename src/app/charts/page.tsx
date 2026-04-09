@@ -47,14 +47,10 @@ export default function ChartsPage() {
 
   const supabase = createClient();
 
-  // Handle date selection — works even if same date clicked again
+  // Handle date selection — dateClickCount triggers re-fetch even on same date
   const handleDateSelect = useCallback((date: string) => {
-    // Force re-render by briefly clearing, then setting
-    setSelectedDate(null);
-    setTimeout(() => {
-      setSelectedDate(date);
-      setDateClickCount((c) => c + 1);
-    }, 0);
+    setSelectedDate(date);
+    setDateClickCount((c) => c + 1);
   }, []);
 
   // Resize handle logic

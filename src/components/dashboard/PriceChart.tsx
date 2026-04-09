@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -133,11 +133,23 @@ export function PriceChart({ commodity, prices, onClose, onDateSelect }: Props) 
 
   const tickInterval = Math.max(1, Math.floor(chartData.length / 8));
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function handleChartClick(state: any) {
-    if (state?.activePayload?.[0]?.payload?.date) {
-      onDateSelect?.(state.activePayload[0].payload.date);
+  // Ref-based click: track last hovered date from Tooltip, use on wrapper click
+  const hoveredDateRef = useRef<string | null>(null);
+
+  // Clear stale hover when commodity, chart type, or time range changes
+  useEffect(() => {
+    hoveredDateRef.current = null;
+  }, [commodity.slug, chartType, timeRange]);
+
+  function handleChartAreaClick() {
+    const date = hoveredDateRef.current;
+    if (date) {
+      onDateSelect?.(date);
     }
+  }
+
+  function handleChartMouseLeave() {
+    hoveredDateRef.current = null;
   }
 
   const forecastLabel = FORECAST_OPTIONS.find((o) => o.days === forecastHorizon)?.label ?? "Off";
@@ -257,10 +269,15 @@ export function PriceChart({ commodity, prices, onClose, onDateSelect }: Props) 
         </div>
       )}
 
-      {/* Chart — using ComposedChart to overlay actual + forecast */}
-      <div className="h-[360px] px-5 py-4" style={{ cursor: "crosshair" }}>
+      {/* Chart — wrapper div handles click via hovered date ref */}
+      <div
+        className="h-[360px] px-5 py-4"
+        style={{ cursor: "crosshair" }}
+        onClick={handleChartAreaClick}
+        onMouseLeave={handleChartMouseLeave}
+      >
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} onClick={handleChartClick}>
+          <ComposedChart data={chartData}>
             <defs>
               <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={commodity.color_hex} stopOpacity={0.15} />
@@ -275,7 +292,7 @@ export function PriceChart({ commodity, prices, onClose, onDateSelect }: Props) 
             <CartesianGrid stroke="#1f2233" vertical={false} />
             <XAxis dataKey="label" tick={{ fill: "#444", fontSize: 11 }} tickLine={false} axisLine={false} interval={tickInterval} />
             <YAxis domain={["auto", "auto"]} tick={{ fill: "#444", fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} width={60} />
-            <Tooltip content={<ChartTooltip />} />
+            <Tooltip content={<ChartTooltip hoveredDateRef={hoveredDateRef} />} />
 
             {/* Average reference line */}
             <ReferenceLine y={signals.avg} stroke="#3a3d4a" strokeDasharray="4 4" />
@@ -361,7 +378,16 @@ export function PriceChart({ commodity, prices, onClose, onDateSelect }: Props) 
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function ChartTooltip({ active, payload }: any) {
+function ChartTooltip({ active, payload, hoveredDateRef }: any) {
+  // Update hovered date ref for click handler
+  if (hoveredDateRef) {
+    if (active && payload?.[0]?.payload?.date) {
+      hoveredDateRef.current = payload[0].payload.date;
+    } else {
+      hoveredDateRef.current = null;
+    }
+  }
+
   if (!active || !payload?.[0]) return null;
   const data = payload[0].payload;
   const isForecast = data.isForecast;
