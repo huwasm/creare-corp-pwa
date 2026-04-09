@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { CommodityCards } from "@/components/dashboard/CommodityCards";
 import { PriceChart } from "@/components/dashboard/PriceChart";
+import { OverlayChart } from "@/components/dashboard/OverlayChart";
 import { EventFeed } from "@/components/dashboard/EventFeed";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -16,22 +17,24 @@ import {
   type NewsRow,
 } from "@/lib/queries";
 
-type ViewMode = "cards" | "chart";
+type ViewMode = "cards" | "chart" | "overlay";
 
-export default function Home() {
+export default function ChartsPage() {
   const [commodities, setCommodities] = useState<Commodity[]>([]);
   const [activeCommodity, setActiveCommodity] = useState("copper_lme");
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [role, setRole] = useState<"trader" | "buyer">("trader");
   const [priceData, setPriceData] = useState<Record<string, PriceRow[]>>({});
+  const [fullPriceData, setFullPriceData] = useState<Record<string, PriceRow[]>>({});
   const [chartPrices, setChartPrices] = useState<PriceRow[]>([]);
   const [news, setNews] = useState<NewsRow[]>([]);
   const [newsFilter, setNewsFilter] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingOverlay, setLoadingOverlay] = useState(false);
 
   const supabase = createClient();
 
-  // Initial load
+  // Initial load — 90d for cards
   useEffect(() => {
     async function load() {
       const [comms, allPrices, articles] = await Promise.all([
@@ -43,25 +46,40 @@ export default function Home() {
       setCommodities(comms);
       setNews(articles);
 
-      // Group prices by commodity
       const grouped: Record<string, PriceRow[]> = {};
       allPrices.forEach((p) => {
         if (!grouped[p.commodity_slug]) grouped[p.commodity_slug] = [];
         grouped[p.commodity_slug].push(p);
       });
       setPriceData(grouped);
-
       setLoading(false);
     }
     load();
   }, []);
 
-  // Load full price history when switching to chart view or changing commodity
+  // Load single commodity full history for chart view
   useEffect(() => {
     if (viewMode === "chart") {
       fetchPrices(supabase, activeCommodity, 9999).then(setChartPrices);
     }
   }, [viewMode, activeCommodity]);
+
+  // Load ALL commodities full history for overlay view
+  useEffect(() => {
+    if (viewMode === "overlay" && Object.keys(fullPriceData).length === 0) {
+      setLoadingOverlay(true);
+      Promise.all(
+        ["copper_lme", "nickel_lme", "aluminium_lme"].map((slug) =>
+          fetchPrices(supabase, slug, 9999).then((prices) => ({ slug, prices }))
+        )
+      ).then((results) => {
+        const grouped: Record<string, PriceRow[]> = {};
+        results.forEach((r) => (grouped[r.slug] = r.prices));
+        setFullPriceData(grouped);
+        setLoadingOverlay(false);
+      });
+    }
+  }, [viewMode]);
 
   // Load filtered news
   useEffect(() => {
@@ -78,12 +96,7 @@ export default function Home() {
   if (loading) {
     return (
       <>
-        <Header
-          commodity={activeCommodity}
-          onCommodityChange={setActiveCommodity}
-          role={role}
-          onRoleChange={setRole}
-        />
+        <Header commodity={activeCommodity} onCommodityChange={setActiveCommodity} role={role} onRoleChange={setRole} />
         <main className="flex flex-1 items-center justify-center">
           <div className="text-sm text-gray-600">Loading...</div>
         </main>
@@ -121,9 +134,7 @@ export default function Home() {
               <button
                 onClick={() => setViewMode("cards")}
                 className={`px-4 py-2 text-xs font-medium transition-colors ${
-                  viewMode === "cards"
-                    ? "bg-[#c9a44a] font-semibold text-[#0f1117]"
-                    : "text-gray-500 hover:text-gray-300"
+                  viewMode === "cards" ? "bg-[#c9a44a] font-semibold text-[#0f1117]" : "text-gray-500 hover:text-gray-300"
                 }`}
               >
                 ▦ Overview
@@ -131,12 +142,18 @@ export default function Home() {
               <button
                 onClick={() => setViewMode("chart")}
                 className={`px-4 py-2 text-xs font-medium transition-colors ${
-                  viewMode === "chart"
-                    ? "bg-[#c9a44a] font-semibold text-[#0f1117]"
-                    : "text-gray-500 hover:text-gray-300"
+                  viewMode === "chart" ? "bg-[#c9a44a] font-semibold text-[#0f1117]" : "text-gray-500 hover:text-gray-300"
                 }`}
               >
-                📈 Chart
+                📈 Single
+              </button>
+              <button
+                onClick={() => setViewMode("overlay")}
+                className={`px-4 py-2 text-xs font-medium transition-colors ${
+                  viewMode === "overlay" ? "bg-[#c9a44a] font-semibold text-[#0f1117]" : "text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                📊 Compare
               </button>
             </div>
           </div>
@@ -151,10 +168,9 @@ export default function Home() {
             />
           )}
 
-          {/* Chart View */}
+          {/* Single Chart View */}
           {viewMode === "chart" && activeComm && (
             <>
-              {/* Mini cards row for switching */}
               <div className="flex gap-3">
                 {commodities.map((c) => (
                   <button
@@ -166,29 +182,32 @@ export default function Home() {
                         : "border-[#2a2d3a] text-gray-500 hover:border-[#3a3d4a] hover:text-gray-300"
                     }`}
                   >
-                    <span
-                      className="h-2 w-2 rounded-full"
-                      style={{ backgroundColor: c.color_hex }}
-                    />
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c.color_hex }} />
                     {c.symbol} — {c.name}
                   </button>
                 ))}
               </div>
-
-              <PriceChart
-                commodity={activeComm}
-                prices={chartPrices}
-                onClose={() => setViewMode("cards")}
-              />
+              <PriceChart commodity={activeComm} prices={chartPrices} onClose={() => setViewMode("cards")} />
             </>
           )}
 
+          {/* Overlay Chart View — All 3 commodities */}
+          {viewMode === "overlay" && (
+            loadingOverlay ? (
+              <div className="flex h-[400px] items-center justify-center rounded-[14px] border border-[#2a2d3a] bg-[#1a1d28]">
+                <span className="text-sm text-gray-600">Loading all commodities...</span>
+              </div>
+            ) : (
+              <OverlayChart
+                commodities={commodities}
+                allPrices={fullPriceData}
+                onClose={() => setViewMode("cards")}
+              />
+            )
+          )}
+
           {/* Event Feed */}
-          <EventFeed
-            news={news}
-            commodityFilter={newsFilter}
-            onFilterChange={setNewsFilter}
-          />
+          <EventFeed news={news} commodityFilter={newsFilter} onFilterChange={setNewsFilter} />
         </div>
       </main>
     </>
