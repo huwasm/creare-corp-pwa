@@ -7,8 +7,6 @@ import { CommodityCards } from "@/components/dashboard/CommodityCards";
 import { PriceChart } from "@/components/dashboard/PriceChart";
 import { OverlayChart } from "@/components/dashboard/OverlayChart";
 import { EventFeed } from "@/components/dashboard/EventFeed";
-import { DateEvents } from "@/components/dashboard/DateEvents";
-import { TopHighlights } from "@/components/dashboard/TopHighlights";
 import { ChatPanel } from "@/components/dashboard/ChatPanel";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -240,29 +238,13 @@ export default function ChartsPage() {
           </div>
         </main>
 
-        {/* Column 3: Right panel — highlights + date events + chat */}
-        <aside className="flex w-[380px] shrink-0 flex-col overflow-hidden border-l border-[#2a2d3a] bg-[#0f1117]">
-          {/* Top: Highlights or Date Events */}
-          <div className="flex-1 overflow-y-auto">
-            {selectedDate ? (
-              <DateEvents
-                selectedDate={selectedDate}
-                activeCommodity={activeCommodity}
-                commodityName={activeComm?.name ?? ""}
-              />
-            ) : (
-              <TopHighlights activeCommodity={activeCommodity} />
-            )}
-          </div>
-
-          {/* Bottom: Chat */}
-          <div className="h-[280px] shrink-0 border-t border-[#2a2d3a]">
-            <ChatPanel
-              activeCommodity={activeCommodity}
-              commodityName={activeComm?.name ?? ""}
-              selectedDate={selectedDate}
-            />
-          </div>
+        {/* Column 3: Right panel — unified chat container */}
+        <aside className="flex w-[380px] shrink-0 flex-col overflow-hidden border-l border-[#2a2d3a] bg-[#0f1117] p-3">
+          <ChatPanel
+            activeCommodity={activeCommodity}
+            commodityName={activeComm?.name ?? ""}
+            selectedDate={selectedDate}
+          />
         </aside>
       </div>
     </div>

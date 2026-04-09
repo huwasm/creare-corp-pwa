@@ -68,12 +68,21 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { message, commodity_slug, selected_date, history } = body as {
+  const { message, commodity_slug, selected_date, language, history } = body as {
     message: string;
     commodity_slug: string;
     selected_date?: string;
+    language?: string;
     history?: { role: string; content: string }[];
   };
+
+  const LANG_NAMES: Record<string, string> = {
+    EN: "English", DE: "German", FR: "French", ES: "Spanish",
+    KR: "Korean", JP: "Japanese", CN: "Chinese", PL: "Polish",
+  };
+  const langInstruction = language && language !== "EN"
+    ? `\n\nIMPORTANT: Respond entirely in ${LANG_NAMES[language] || language}. All analysis, explanations, and recommendations must be in ${LANG_NAMES[language] || language}.`
+    : "";
 
   if (!message || !commodity_slug) {
     return Response.json({ error: "message and commodity_slug required" }, { status: 400 });
@@ -157,7 +166,7 @@ Instructions:
 - If asked about trends, cite the price data
 - If asked about events, cite the news articles
 - Indicate uncertainty when data is limited
-- Keep responses under 200 words unless the user asks for detail`;
+- Keep responses under 200 words unless the user asks for detail${langInstruction}`;
 
   // 6. Build messages
   const messages = [
