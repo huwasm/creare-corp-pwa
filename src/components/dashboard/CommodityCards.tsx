@@ -66,9 +66,21 @@ export function CommodityCards({ commodities, priceData, activeCommodity, onSele
               <span className="font-mono text-base font-bold text-white">
                 {signals.latest.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 <span className="ml-1 text-[11px] text-gray-600">$/MT</span>
-                <span className={`ml-1 text-[21px] ${signals.changePct >= 0 ? "text-green-400" : "text-red-400"}`}>
-                  {signals.changePct >= 0 ? "↗" : "↘"}
-                </span>
+                <svg
+                  className={`ml-1 inline-block ${signals.changePct >= 0 ? "text-green-400" : "text-red-400"}`}
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ transform: signals.changePct >= 0 ? "rotate(-45deg)" : "rotate(45deg)" }}
+                >
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
               </span>
             </div>
 
