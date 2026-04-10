@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENA: LLM Decision Briefing — Mockup</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1117; color: #e0e0e0; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { font-size: 20px; margin-bottom: 6px; color: #fff; }
+        .subtitle { font-size: 13px; color: #888; margin-bottom: 24px; }
+        .section-title { font-size: 12px; font-weight: 600; color: #888; margin: 24px 0 12px; text-transform: uppercase; letter-spacing: 1px; }
+        .section-divider { border: none; border-top: 2px solid #c9a44a; margin: 60px 0 40px; opacity: 0.3; }
+        .view-label { display: inline-block; font-size: 11px; font-weight: 700; padding: 4px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .view-label.desktop { background: rgba(33,150,243,0.15); color: #2196f3; }
+        .view-label.chat { background: rgba(201,164,74,0.15); color: #c9a44a; }
+        .view-label.qa { background: rgba(76,175,80,0.15); color: #4caf50; }
+        .view-label.flow { background: rgba(156,39,176,0.15); color: #ce93d8; }
+
+        /* ============================== */
+        /* Decision Briefing Panel        */
+        /* ============================== */
+        .briefing-panel { background: #1a1d28; border-radius: 14px; border: 1px solid #2a2d3a; overflow: hidden; max-width: 800px; }
+
+        /* Header */
+        .briefing-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #2a2d3a; }
+        .briefing-header-left { display: flex; align-items: center; gap: 12px; }
+        .briefing-commodity { display: flex; align-items: center; gap: 8px; }
+        .briefing-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; font-family: 'SF Mono', monospace; }
+        .briefing-name { font-size: 16px; font-weight: 600; color: #fff; }
+        .briefing-date { font-size: 11px; color: #555; }
+
+        /* Badges row */
+        .badges-row { display: flex; gap: 8px; padding: 12px 20px; border-bottom: 1px solid #2a2d3a; background: #161822; }
+        .badge { font-size: 10px; font-weight: 700; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 4px; }
+        .badge.signal-up { background: rgba(76,175,80,0.15); color: #4caf50; border: 1px solid rgba(76,175,80,0.3); }
+        .badge.signal-down { background: rgba(239,83,80,0.15); color: #ef5350; border: 1px solid rgba(239,83,80,0.3); }
+        .badge.signal-neutral { background: rgba(255,193,7,0.15); color: #ffc107; border: 1px solid rgba(255,193,7,0.3); }
+        .badge.flag-stable { background: rgba(76,175,80,0.1); color: #4caf50; border: 1px solid rgba(76,175,80,0.2); }
+        .badge.flag-watch { background: rgba(255,193,7,0.1); color: #ffc107; border: 1px solid rgba(255,193,7,0.2); }
+        .badge.flag-alert { background: rgba(239,83,80,0.1); color: #ef5350; border: 1px solid rgba(239,83,80,0.2); }
+        .badge.sentiment-pos { background: rgba(76,175,80,0.1); color: #4caf50; border: 1px solid rgba(76,175,80,0.2); }
+        .badge.sentiment-neg { background: rgba(239,83,80,0.1); color: #ef5350; border: 1px solid rgba(239,83,80,0.2); }
+        .badge-label { font-size: 9px; color: #555; font-weight: 500; text-transform: none; letter-spacing: 0; margin-right: 2px; }
+
+        /* Recommendation hero */
+        .recommendation-hero { padding: 16px 20px; border-bottom: 1px solid #2a2d3a; display: flex; align-items: center; justify-content: space-between; }
+        .rec-main { display: flex; align-items: center; gap: 12px; }
+        .rec-badge { font-size: 18px; font-weight: 800; padding: 8px 20px; border-radius: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        .rec-badge.avoid { background: rgba(239,83,80,0.15); color: #ef5350; border: 2px solid rgba(239,83,80,0.3); }
+        .rec-badge.hold { background: rgba(255,193,7,0.15); color: #ffc107; border: 2px solid rgba(255,193,7,0.3); }
+        .rec-badge.buy { background: rgba(76,175,80,0.15); color: #4caf50; border: 2px solid rgba(76,175,80,0.3); }
+        .rec-badge.strong-buy { background: rgba(76,175,80,0.25); color: #4caf50; border: 2px solid rgba(76,175,80,0.5); }
+        .rec-time { font-size: 11px; color: #666; }
+        .rec-scores { display: flex; gap: 16px; }
+        .rec-score-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .rec-score-label { font-size: 9px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+        .rec-score-value { font-size: 14px; font-weight: 700; font-family: 'SF Mono', monospace; }
+
+        /* Briefing body */
+        .briefing-body { padding: 20px; }
+        .briefing-section { margin-bottom: 16px; }
+        .briefing-section:last-child { margin-bottom: 0; }
+        .briefing-section-label { font-size: 10px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .briefing-text { font-size: 13px; line-height: 1.7; color: #ccc; }
+        .briefing-text p { margin-bottom: 8px; }
+
+        /* News bullets */
+        .news-bullet { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid #1f2233; }
+        .news-bullet:last-child { border-bottom: none; }
+        .news-emoji { font-size: 16px; flex-shrink: 0; margin-top: 2px; }
+        .news-content { font-size: 12px; line-height: 1.6; color: #bbb; }
+        .news-source { font-size: 10px; color: #666; margin-top: 2px; }
+
+        /* Closing recommendation */
+        .briefing-closing { font-size: 13px; line-height: 1.7; color: #ccc; padding: 16px 20px; background: #161822; border-radius: 0 0 14px 14px; border-top: 1px solid #2a2d3a; }
+        .briefing-closing.caution { border-left: 3px solid #ef5350; }
+        .briefing-closing.confident { border-left: 3px solid #4caf50; }
+        .briefing-closing.neutral { border-left: 3px solid #ffc107; }
+
+        /* ============================== */
+        /* Chat Integration               */
+        /* ============================== */
+        .chat-container { max-width: 400px; background: #1a1d28; border-radius: 14px; border: 1px solid #2a2d3a; overflow: hidden; }
+        .chat-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #2a2d3a; }
+        .chat-header-left { display: flex; align-items: center; gap: 8px; }
+        .chat-title { font-size: 14px; font-weight: 600; color: #fff; }
+        .chat-commodity { font-size: 10px; color: #555; }
+        .chat-body { padding: 12px 16px; }
+
+        .chat-msg { margin-bottom: 12px; }
+        .chat-msg-user { display: flex; justify-content: flex-end; }
+        .chat-msg-user .bubble { background: rgba(201,164,74,0.2); color: #e8d5a0; border-radius: 12px; padding: 8px 12px; font-size: 12px; max-width: 85%; }
+        .chat-msg-ai { display: flex; justify-content: flex-start; }
+        .chat-msg-ai .bubble { background: #161822; color: #ccc; border: 1px solid #2a2d3a; border-radius: 12px; padding: 10px 14px; font-size: 11px; line-height: 1.6; max-width: 95%; }
+
+        .chat-inline-badges { display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; }
+        .chat-inline-badge { font-size: 9px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+
+        .chat-news-bullet { font-size: 11px; line-height: 1.5; color: #aaa; margin: 6px 0; padding-left: 4px; }
+        .chat-news-source { font-size: 9px; color: #555; }
+
+        .chat-closing { font-size: 11px; line-height: 1.5; color: #ccc; margin-top: 8px; padding-top: 8px; border-top: 1px solid #2a2d3a; }
+
+        .chat-input { display: flex; gap: 8px; padding: 10px 16px; border-top: 1px solid #2a2d3a; }
+        .chat-input input { flex: 1; background: #252838; border: 1px solid #3a3d4a; border-radius: 10px; padding: 8px 12px; color: #ccc; font-size: 12px; outline: none; }
+        .chat-input button { background: #c9a44a; border: none; border-radius: 10px; width: 32px; height: 32px; color: #0f1117; font-size: 14px; font-weight: 700; cursor: pointer; }
+
+        /* ============================== */
+        /* Data Flow                      */
+        /* ============================== */
+        .flow-diagram { background: #1a1d28; border-radius: 14px; border: 1px solid #2a2d3a; padding: 24px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; color: #888; line-height: 2; white-space: pre; overflow-x: auto; }
+        .flow-highlight { color: #c9a44a; font-weight: 600; }
+        .flow-green { color: #4caf50; }
+        .flow-red { color: #ef5350; }
+        .flow-blue { color: #2196f3; }
+
+        /* Q&A */
+        .qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+        @media (max-width: 900px) { .qa-grid { grid-template-columns: 1fr; } }
+        .qa-card { background: #1a1d28; border-radius: 12px; border: 1px solid #2a2d3a; padding: 16px 20px; }
+        .qa-q { font-size: 13px; font-weight: 600; color: #c9a44a; margin-bottom: 8px; }
+        .qa-a { font-size: 12px; color: #888; line-height: 1.6; }
+        code { background: #252838; padding: 1px 6px; border-radius: 4px; font-size: 11px; color: #c9a44a; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>ENA — LLM Decision Briefing</h1>
+    <p class="subtitle">Metals Intelligence Monitor — Price Block + Sentiment Block + Decision Matrix → Plain-language recommendation</p>
+
+    <!-- ============================== -->
+    <!-- VIEW 1: Dedicated Panel        -->
+    <!-- ============================== -->
+    <span class="view-label desktop">Desktop — Dedicated Briefing Panel (Copper · Avoid)</span>
+
+    <div class="briefing-panel">
+        <!-- Header -->
+        <div class="briefing-header">
+            <div class="briefing-header-left">
+                <div class="briefing-commodity">
+                    <div class="briefing-icon" style="background: #E8704020; color: #E87040;">Cu</div>
+                    <div>
+                        <div class="briefing-name">Copper</div>
+                        <div class="briefing-date">Analysis for Apr 2, 2026 · LME</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Badges -->
+        <div class="badges-row">
+            <div class="badge signal-down"><span class="badge-label">Signal</span> ↓ Down</div>
+            <div class="badge flag-alert"><span class="badge-label">Flag</span> ⚠ Alert</div>
+            <div class="badge sentiment-neg"><span class="badge-label">Sentiment</span> Negative</div>
+            <div class="badge" style="background: rgba(239,83,80,0.05); color: #888; border: 1px solid #2a2d3a;"><span class="badge-label">Vol</span> High</div>
+            <div class="badge" style="background: rgba(239,83,80,0.05); color: #888; border: 1px solid #2a2d3a;"><span class="badge-label">Forecast</span> Downward</div>
+        </div>
+
+        <!-- Recommendation Hero -->
+        <div class="recommendation-hero">
+            <div class="rec-main">
+                <div class="rec-badge avoid">Avoid</div>
+                <div class="rec-time">No clear entry point — wait</div>
+            </div>
+            <div class="rec-scores">
+                <div class="rec-score-item">
+                    <span class="rec-score-label">Final Score</span>
+                    <span class="rec-score-value" style="color: #ef5350;">-0.62</span>
+                </div>
+                <div class="rec-score-item">
+                    <span class="rec-score-label">Price</span>
+                    <span class="rec-score-value" style="color: #ef5350;">-0.71</span>
+                </div>
+                <div class="rec-score-item">
+                    <span class="rec-score-label">Sentiment</span>
+                    <span class="rec-score-value" style="color: #ef5350;">-0.48</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Briefing Body -->
+        <div class="briefing-body">
+            <!-- Price Summary -->
+            <div class="briefing-section">
+                <div class="briefing-section-label">Price Summary</div>
+                <div class="briefing-text">
+                    <p>Copper has lost 4.2% over the past two weeks and the pressure does not appear to be easing — the short-term outlook points to further decline. Price swings have been larger than usual, adding an extra layer of uncertainty for anyone considering a new position.</p>
+                </div>
+            </div>
+
+            <!-- Market News -->
+            <div class="briefing-section">
+                <div class="briefing-section-label">Market News</div>
+                <div class="news-bullet">
+                    <span class="news-emoji">📉</span>
+                    <div>
+                        <div class="news-content">China's factory activity contracted for the third month in a row, which directly reduces demand for copper in manufacturing and construction.</div>
+                        <div class="news-source">Bloomberg, 12 Apr 2025</div>
+                    </div>
+                </div>
+                <div class="news-bullet">
+                    <span class="news-emoji">📉</span>
+                    <div>
+                        <div class="news-content">Copper stockpiles at major exchanges have reached their highest level in six months, a sign that supply is outpacing current demand.</div>
+                        <div class="news-source">Reuters, 9 Apr 2025</div>
+                    </div>
+                </div>
+                <div class="news-bullet">
+                    <span class="news-emoji">➖</span>
+                    <div>
+                        <div class="news-content">Mining output in Chile remains stable despite ongoing labour talks, so supply disruption is not a near-term factor.</div>
+                        <div class="news-source">WSJ, 6 Apr 2025</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Closing Recommendation -->
+        <div class="briefing-closing caution">
+            Both the price trend and the news environment are pointing in the same direction right now. This is not the right moment to act on copper — it is worth waiting for demand signals to stabilise before revisiting.
+        </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- VIEW 2: Strong Buy example     -->
+    <!-- ============================== -->
+    <div style="margin-top: 48px;">
+        <span class="view-label desktop">Desktop — Briefing Panel (Aluminium · Strong Buy)</span>
+
+        <div class="briefing-panel">
+            <div class="briefing-header">
+                <div class="briefing-header-left">
+                    <div class="briefing-commodity">
+                        <div class="briefing-icon" style="background: #2196F320; color: #2196F3;">Al</div>
+                        <div>
+                            <div class="briefing-name">Aluminium</div>
+                            <div class="briefing-date">Analysis for Apr 2, 2026 · LME</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="badges-row">
+                <div class="badge signal-up"><span class="badge-label">Signal</span> ↑ Up</div>
+                <div class="badge flag-stable"><span class="badge-label">Flag</span> ✓ Stable</div>
+                <div class="badge sentiment-pos"><span class="badge-label">Sentiment</span> Positive</div>
+                <div class="badge" style="background: rgba(76,175,80,0.05); color: #888; border: 1px solid #2a2d3a;"><span class="badge-label">Vol</span> Low</div>
+                <div class="badge" style="background: rgba(76,175,80,0.05); color: #888; border: 1px solid #2a2d3a;"><span class="badge-label">Forecast</span> Upward</div>
+            </div>
+
+            <div class="recommendation-hero">
+                <div class="rec-main">
+                    <div class="rec-badge strong-buy">Strong Buy</div>
+                    <div class="rec-time">Act within 24–48 hours</div>
+                </div>
+                <div class="rec-scores">
+                    <div class="rec-score-item">
+                        <span class="rec-score-label">Final Score</span>
+                        <span class="rec-score-value" style="color: #4caf50;">+0.78</span>
+                    </div>
+                    <div class="rec-score-item">
+                        <span class="rec-score-label">Price</span>
+                        <span class="rec-score-value" style="color: #4caf50;">+0.83</span>
+                    </div>
+                    <div class="rec-score-item">
+                        <span class="rec-score-label">Sentiment</span>
+                        <span class="rec-score-value" style="color: #4caf50;">+0.71</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="briefing-body">
+                <div class="briefing-section">
+                    <div class="briefing-section-label">Price Summary</div>
+                    <div class="briefing-text">
+                        <p>Aluminium has gained 8.1% over the past two weeks on strong demand from the automotive and packaging sectors. The price trajectory remains firmly upward with low volatility, suggesting steady buying pressure rather than speculative spikes.</p>
+                    </div>
+                </div>
+
+                <div class="briefing-section">
+                    <div class="briefing-section-label">Market News</div>
+                    <div class="news-bullet">
+                        <span class="news-emoji">📈</span>
+                        <div>
+                            <div class="news-content">European auto manufacturers have increased aluminium procurement orders by 12% ahead of new EV production lines, directly boosting demand.</div>
+                            <div class="news-source">Reuters, 1 Apr 2026</div>
+                        </div>
+                    </div>
+                    <div class="news-bullet">
+                        <span class="news-emoji">📈</span>
+                        <div>
+                            <div class="news-content">Smelter curtailments in China due to energy cost pressures are tightening global supply, supporting prices at current levels.</div>
+                            <div class="news-source">Bloomberg, 28 Mar 2026</div>
+                        </div>
+                    </div>
+                    <div class="news-bullet">
+                        <span class="news-emoji">➖</span>
+                        <div>
+                            <div class="news-content">LME warehouse stocks for aluminium have stabilized after weeks of decline, removing a near-term supply concern.</div>
+                            <div class="news-source">Metal.com, 25 Mar 2026</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="briefing-closing confident">
+                Conditions are aligned for aluminium right now — upward momentum, supportive news environment, and stable volatility. Current levels look favorable for building or adding to a position within the next 24–48 hours.
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- VIEW 3: Chat Integration       -->
+    <!-- ============================== -->
+    <div style="margin-top: 48px;">
+        <span class="view-label chat">Chat — "Should I buy copper?"</span>
+
+        <div class="chat-container">
+            <div class="chat-header">
+                <div class="chat-header-left">
+                    <span class="chat-title">Chat</span>
+                    <span class="chat-commodity">Copper</span>
+                </div>
+            </div>
+            <div class="chat-body">
+                <!-- User question -->
+                <div class="chat-msg chat-msg-user">
+                    <div class="bubble">Should I be buying copper right now?</div>
+                </div>
+
+                <!-- AI response with inline briefing -->
+                <div class="chat-msg chat-msg-ai">
+                    <div class="bubble">
+                        <!-- Inline badges -->
+                        <div class="chat-inline-badges">
+                            <span class="chat-inline-badge" style="background: rgba(239,83,80,0.15); color: #ef5350;">↓ Down</span>
+                            <span class="chat-inline-badge" style="background: rgba(239,83,80,0.1); color: #ef5350;">⚠ Alert</span>
+                            <span class="chat-inline-badge" style="background: rgba(239,83,80,0.1); color: #ef5350;">Negative</span>
+                            <span class="chat-inline-badge" style="background: rgba(239,83,80,0.15); color: #ef5350; font-weight: 800;">AVOID</span>
+                        </div>
+
+                        Copper has lost 4.2% over the past two weeks and the pressure does not appear to be easing — the short-term outlook points to further decline.
+
+                        <div class="chat-news-bullet">📉 China's factory activity contracted for the third month, reducing demand for copper in manufacturing. <span class="chat-news-source">(Bloomberg, 12 Apr)</span></div>
+                        <div class="chat-news-bullet">📉 Copper stockpiles at exchanges hit a six-month high — supply outpacing demand. <span class="chat-news-source">(Reuters, 9 Apr)</span></div>
+                        <div class="chat-news-bullet">➖ Chile mining output stable despite labour talks. <span class="chat-news-source">(WSJ, 6 Apr)</span></div>
+
+                        <div class="chat-closing">
+                            This is not the right moment to act on copper — it is worth waiting for demand signals to stabilise before revisiting.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Follow-up -->
+                <div class="chat-msg chat-msg-user">
+                    <div class="bubble">What about aluminium instead?</div>
+                </div>
+            </div>
+            <div class="chat-input">
+                <input type="text" placeholder="Ask about Copper..." />
+                <button>↑</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- DATA FLOW                      -->
+    <!-- ============================== -->
+    <div style="margin-top: 48px;">
+        <span class="view-label flow">System — Data Flow</span>
+
+        <div class="flow-diagram">User selects commodity + date
+        │
+        ├──► <span class="flow-highlight">Price Block</span> (computed in JS)
+        │     ├── <span class="flow-blue">ROC 20d</span> → Score_A (tanh scaled)
+        │     ├── <span class="flow-blue">ARIMA</span> → cumulative return → Score_B
+        │     ├── Final = 0.6×A + 0.4×B → Signal (Up/Neutral/Down)
+        │     └── <span class="flow-blue">GARCH</span> → volatility → Flag (Stable/Watch/Alert)
+        │
+        ├──► <span class="flow-highlight">Sentiment Block</span> (from DB)
+        │     ├── <span class="flow-green">FinBERT scores</span> from 30200_news (pre-computed)
+        │     ├── 30-day window with decay: e^(-0.05 × days_ago)
+        │     ├── Weighted aggregate → sentiment_tier
+        │     └── Top 3 headlines by decay × confidence
+        │
+        └──► <span class="flow-highlight">Decision Block</span>
+              ├── Matrix: Signal × Sentiment → <span class="flow-green">Strong Buy</span> / Buy / Hold / <span class="flow-red">Avoid</span>
+              ├── Flag modifiers: Alert → override to Avoid
+              └── LLM prompt → <span class="flow-highlight">plain-language briefing</span>
+
+Output: 200-word briefing with Price Summary + 3 News + Recommendation</div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- DECISION MATRIX                -->
+    <!-- ============================== -->
+    <div style="margin-top: 48px;">
+        <span class="view-label desktop">Reference — Decision Matrix</span>
+
+        <div style="background: #1a1d28; border-radius: 14px; border: 1px solid #2a2d3a; padding: 20px; max-width: 600px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                <thead>
+                    <tr>
+                        <th style="padding: 8px 12px; text-align: left; color: #555; border-bottom: 1px solid #2a2d3a;"></th>
+                        <th style="padding: 8px 12px; text-align: center; color: #ef5350; border-bottom: 1px solid #2a2d3a;">Negative</th>
+                        <th style="padding: 8px 12px; text-align: center; color: #ffc107; border-bottom: 1px solid #2a2d3a;">Neutral</th>
+                        <th style="padding: 8px 12px; text-align: center; color: #4caf50; border-bottom: 1px solid #2a2d3a;">Positive</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: 10px 12px; color: #4caf50; font-weight: 600;">↑ Up</td>
+                        <td style="padding: 10px 12px; text-align: center; color: #ffc107;">Hold</td>
+                        <td style="padding: 10px 12px; text-align: center; color: #4caf50;">Buy</td>
+                        <td style="padding: 10px 12px; text-align: center; color: #4caf50; font-weight: 700;">Strong Buy</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px 12px; color: #ffc107; font-weight: 600;">→ Neutral</td>
+                        <td style="padding: 10px 12px; text-align: center; color: #ef5350;">Avoid</td>
+                        <td style="padding: 10px 12px; text-align: center; color: #ffc107;">Hold</td>
+                        <td style="padding: 10px 12px; text-align: center; color: #4caf50;">Buy</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px 12px; color: #ef5350; font-weight: 600;">↓ Down</td>
+                        <td style="padding: 10px 12px; text-align: center; color: #ef5350; font-weight: 700;">Avoid</td>
+                        <td style="padding: 10px 12px; text-align: center; color: #ef5350;">Avoid</td>
+                        <td style="padding: 10px 12px; text-align: center; color: #ffc107;">Hold</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p style="margin-top: 12px; font-size: 10px; color: #555;">Flag modifiers: Alert → always Avoid. Watch + Up → downgrade one level.</p>
+        </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- Q&A                            -->
+    <!-- ============================== -->
+    <hr class="section-divider">
+    <span class="view-label qa">Design Decisions</span>
+    <p class="section-title">Q&A</p>
+
+    <div class="qa-grid">
+        <div class="qa-card">
+            <p class="qa-q">Why a dedicated panel AND chat integration?</p>
+            <p class="qa-a">The dedicated panel is for the overview page — shows the full briefing when you click "View forecast" on a card. The chat version is for quick Q&A — same data, same logic, but inline with conversation. Both use the same 3-block computation.</p>
+        </div>
+        <div class="qa-card">
+            <p class="qa-q">Where do the scores come from?</p>
+            <p class="qa-a"><strong>Price Score</strong>: 60% ROC momentum + 40% ARIMA forecast, computed in JS from <code>30100_prices</code>. <strong>Sentiment Score</strong>: decay-weighted FinBERT aggregation from <code>30200_news.finbert_*</code> columns. <strong>Final Score</strong>: matrix lookup + flag modifier.</p>
+        </div>
+        <div class="qa-card">
+            <p class="qa-q">Why not just let the LLM decide?</p>
+            <p class="qa-a">The decision matrix is deterministic — same inputs always produce the same recommendation. The LLM only writes the narrative around an already-decided recommendation. This means the LLM can't hallucinate a "Buy" when the data says "Avoid".</p>
+        </div>
+        <div class="qa-card">
+            <p class="qa-q">What about GARCH?</p>
+            <p class="qa-a">GARCH estimates forward volatility. It doesn't affect the score — it sets the Flag (Stable/Watch/Alert). For hackathon, we can approximate with rolling std instead of full GARCH. The flag modifiers still work the same way.</p>
+        </div>
+        <div class="qa-card">
+            <p class="qa-q">Time windows?</p>
+            <p class="qa-a"><strong>ROC</strong>: 20-day price change. <strong>ARIMA</strong>: 30-day lookback, 30-day forecast. <strong>FinBERT</strong>: 30-day news window with exponential decay (today=1.0, 30d ago=0.22). <strong>GARCH</strong>: full history for fitting, 30-day forward variance forecast.</p>
+        </div>
+        <div class="qa-card">
+            <p class="qa-q">What does the user see?</p>
+            <p class="qa-a">Never sees scores, models, or technical terms. Just: a colored badge (Strong Buy / Buy / Hold / Avoid), a time suggestion ("Act within 24-48h"), and a 200-word briefing in plain English. The badges row is optional — for power users who want to see the breakdown.</p>
+        </div>
+    </div>
+</div>
+</body>
+</html>

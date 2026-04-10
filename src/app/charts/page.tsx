@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import Link from "next/link";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { CommodityCards } from "@/components/dashboard/CommodityCards";
@@ -217,6 +218,12 @@ export default function ChartsPage() {
                 >
                   📊 Compare
                 </button>
+                <Link
+                  href={`/briefing?commodity=${activeCommodity}`}
+                  className="px-3.5 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:text-gray-300"
+                >
+                  🎯 Briefing
+                </Link>
               </div>
             </div>
 

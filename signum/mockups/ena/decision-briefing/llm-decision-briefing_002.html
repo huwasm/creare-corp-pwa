@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENA: Two-Screen Layout — Charts Tab + Briefing Tab — Mockup 002</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1117; color: #e0e0e0; padding: 20px; }
+        .container { max-width: 1500px; margin: 0 auto; }
+        h1 { font-size: 20px; margin-bottom: 6px; color: #fff; }
+        .subtitle { font-size: 13px; color: #888; margin-bottom: 32px; }
+        .section-divider { border: none; border-top: 2px solid #c9a44a; margin: 60px 0 40px; opacity: 0.3; }
+        .view-label { display: inline-block; font-size: 11px; font-weight: 700; padding: 4px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .view-label.screen { background: rgba(33,150,243,0.15); color: #2196f3; }
+        .view-label.qa { background: rgba(76,175,80,0.15); color: #4caf50; }
+        .screen-label { font-size: 14px; font-weight: 600; color: #c9a44a; margin-bottom: 16px; }
+
+        /* ============================== */
+        /* Full Screen Frame              */
+        /* ============================== */
+        .screen-frame { border: 1px solid #2a2d3a; border-radius: 14px; overflow: hidden; margin-bottom: 48px; background: #0f1117; }
+
+        /* Header bar */
+        .app-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; background: #0f1117; border-bottom: 1px solid #2a2d3a; }
+        .app-logo { font-size: 15px; font-weight: 700; color: #fff; }
+        .app-logo span { color: #c9a44a; }
+        .app-header-right { display: flex; align-items: center; gap: 12px; }
+        .commodity-dropdown { background: #252838; border: 1px solid #3a3d4a; color: #ccc; padding: 6px 14px; border-radius: 8px; font-size: 12px; }
+        .role-toggle { display: flex; overflow: hidden; border-radius: 8px; border: 1px solid #3a3d4a; }
+        .role-btn { padding: 6px 16px; font-size: 11px; background: transparent; border: none; color: #666; cursor: pointer; }
+        .role-btn.active { background: #c9a44a; color: #0f1117; font-weight: 600; }
+
+        /* 3-column body */
+        .app-body { display: flex; min-height: 580px; }
+
+        /* Sidebar */
+        .sidebar { width: 48px; border-right: 1px solid #2a2d3a; display: flex; flex-direction: column; align-items: center; padding-top: 12px; gap: 6px; background: #0f1117; }
+        .sidebar-icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 8px; color: #555; cursor: pointer; }
+        .sidebar-icon.active { background: rgba(201,164,74,0.1); color: #c9a44a; }
+        .sidebar-icon:hover { color: #aaa; }
+
+        /* Main content */
+        .main-content { flex: 1; overflow-y: auto; padding: 16px; background: #0f1117; }
+
+        /* Resize handle */
+        .resize-bar { width: 5px; background: #2a2d3a; cursor: col-resize; flex-shrink: 0; }
+        .resize-bar:hover { background: #c9a44a; }
+
+        /* Chat panel */
+        .chat-panel { width: 360px; flex-shrink: 0; background: #0f1117; padding: 12px; display: flex; flex-direction: column; }
+
+        /* Welcome bar */
+        .welcome-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #1a1d28; border-radius: 12px; border: 1px solid #2a2d3a; margin-bottom: 16px; }
+        .welcome-text { font-size: 13px; font-weight: 600; color: #fff; }
+        .welcome-date { font-size: 10px; color: #555; margin-top: 2px; }
+
+        /* Tab toggle */
+        .tab-toggle { display: flex; overflow: hidden; border-radius: 8px; border: 1px solid #3a3d4a; background: #252838; }
+        .tab-btn { padding: 6px 14px; font-size: 11px; background: transparent; border: none; color: #555; cursor: pointer; font-weight: 500; }
+        .tab-btn.active { background: #c9a44a; color: #0f1117; font-weight: 600; }
+
+        /* ============================== */
+        /* CHARTS TAB content             */
+        /* ============================== */
+        .mini-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+        .mini-card { background: #1a1d28; border-radius: 10px; border: 1px solid #2a2d3a; padding: 12px; }
+        .mini-card.selected { border-color: #c9a44a; }
+        .mini-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .mini-card-name { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #fff; }
+        .mini-card-icon { width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; font-family: monospace; }
+        .mini-badge { font-size: 8px; font-weight: 700; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; }
+        .mini-price { font-size: 14px; font-weight: 700; font-family: monospace; color: #fff; }
+        .mini-sparkline { height: 40px; background: #161822; border-radius: 6px; margin: 6px 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .mini-sparkline svg { width: 100%; height: 100%; }
+
+        /* Chart placeholder */
+        .chart-placeholder { background: #1a1d28; border-radius: 12px; border: 1px solid #c9a44a; padding: 16px; margin-bottom: 16px; }
+        .chart-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .chart-title { display: flex; align-items: center; gap: 8px; }
+        .chart-title-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; font-family: monospace; }
+        .chart-title-name { font-size: 14px; font-weight: 600; color: #fff; }
+        .chart-title-price { font-size: 18px; font-weight: 700; font-family: monospace; color: #fff; }
+        .chart-area { height: 200px; background: #161822; border-radius: 8px; display: flex; align-items: flex-end; padding: 16px; }
+        .chart-line { width: 100%; height: 1px; background: #E87040; opacity: 0.5; }
+
+        /* Event feed mini */
+        .event-mini { background: #1a1d28; border-radius: 12px; border: 1px solid #2a2d3a; padding: 14px; }
+        .event-mini-title { font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 10px; }
+        .event-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #1f2233; font-size: 11px; }
+        .event-row:last-child { border-bottom: none; }
+        .event-date { color: #555; font-family: monospace; font-size: 10px; width: 55px; flex-shrink: 0; }
+        .event-mat { width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; font-family: monospace; flex-shrink: 0; }
+        .event-headline { color: #aaa; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .event-sentiment { font-size: 9px; font-weight: 600; flex-shrink: 0; }
+
+        /* ============================== */
+        /* BRIEFING TAB content           */
+        /* ============================== */
+        .briefing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+
+        .briefing-card { background: #1a1d28; border-radius: 12px; border: 1px solid #2a2d3a; overflow: hidden; }
+
+        .bc-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid #2a2d3a; }
+        .bc-commodity { display: flex; align-items: center; gap: 8px; }
+        .bc-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; font-family: monospace; }
+        .bc-name { font-size: 13px; font-weight: 600; color: #fff; }
+        .bc-date { font-size: 9px; color: #555; }
+
+        .bc-badges { display: flex; gap: 4px; padding: 8px 14px; border-bottom: 1px solid #2a2d3a; background: #161822; flex-wrap: wrap; }
+        .bc-badge { font-size: 8px; font-weight: 700; padding: 3px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
+
+        .bc-rec-hero { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid #2a2d3a; }
+        .bc-rec-badge { font-size: 14px; font-weight: 800; padding: 6px 14px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .bc-rec-badge.avoid { background: rgba(239,83,80,0.15); color: #ef5350; border: 1.5px solid rgba(239,83,80,0.3); }
+        .bc-rec-badge.hold { background: rgba(255,193,7,0.15); color: #ffc107; border: 1.5px solid rgba(255,193,7,0.3); }
+        .bc-rec-badge.buy { background: rgba(76,175,80,0.15); color: #4caf50; border: 1.5px solid rgba(76,175,80,0.3); }
+        .bc-rec-badge.strong-buy { background: rgba(76,175,80,0.25); color: #4caf50; border: 1.5px solid rgba(76,175,80,0.5); }
+        .bc-rec-time { font-size: 10px; color: #666; }
+        .bc-score { font-size: 12px; font-weight: 700; font-family: monospace; }
+
+        .bc-body { padding: 12px 14px; font-size: 11px; line-height: 1.6; color: #aaa; }
+        .bc-section-label { font-size: 9px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; margin-top: 10px; }
+        .bc-section-label:first-child { margin-top: 0; }
+        .bc-text { margin-bottom: 6px; }
+
+        .bc-news { margin: 4px 0; padding-left: 4px; }
+        .bc-news-emoji { margin-right: 4px; }
+        .bc-news-source { font-size: 9px; color: #555; }
+
+        .bc-closing { padding: 10px 14px; font-size: 11px; line-height: 1.6; color: #ccc; background: #161822; border-top: 1px solid #2a2d3a; }
+        .bc-closing.caution { border-left: 3px solid #ef5350; }
+        .bc-closing.confident { border-left: 3px solid #4caf50; }
+        .bc-closing.neutral { border-left: 3px solid #ffc107; }
+
+        /* ============================== */
+        /* Chat container                 */
+        /* ============================== */
+        .chat-box { flex: 1; display: flex; flex-direction: column; background: #1a1d28; border-radius: 14px; border: 1px solid #2a2d3a; overflow: hidden; }
+        .chat-box-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid #2a2d3a; }
+        .chat-box-title { font-size: 13px; font-weight: 600; color: #fff; }
+        .chat-box-commodity { font-size: 10px; color: #555; }
+        .chat-box-tools { display: flex; gap: 6px; }
+        .chat-tool-btn { font-size: 9px; color: #c9a44a; background: transparent; border: none; cursor: pointer; }
+
+        .chat-sticky { padding: 10px 14px; border-bottom: 1px solid #2a2d3a; background: #161822; }
+        .chat-sticky-label { font-size: 9px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .chat-news-item { display: flex; align-items: start; gap: 6px; padding: 4px 0; }
+        .chat-news-rank { font-size: 9px; color: #555; font-weight: 600; margin-top: 1px; width: 12px; flex-shrink: 0; }
+        .chat-news-text { font-size: 10px; color: #aaa; line-height: 1.4; }
+        .chat-news-meta { font-size: 8px; color: #555; margin-top: 2px; }
+
+        .chat-messages { flex: 1; padding: 10px 14px; overflow-y: auto; }
+        .chat-msg { margin-bottom: 8px; }
+        .chat-msg.user { display: flex; justify-content: flex-end; }
+        .chat-msg.user .bubble { background: rgba(201,164,74,0.2); color: #e8d5a0; }
+        .chat-msg.ai { display: flex; justify-content: flex-start; }
+        .chat-msg.ai .bubble { background: #161822; color: #ccc; border: 1px solid #2a2d3a; }
+        .bubble { border-radius: 10px; padding: 8px 12px; font-size: 11px; line-height: 1.5; max-width: 90%; }
+
+        .chat-inline-badges { display: flex; gap: 3px; margin-bottom: 6px; flex-wrap: wrap; }
+        .chat-inline-badge { font-size: 8px; font-weight: 600; padding: 2px 6px; border-radius: 8px; }
+        .chat-ai-news { font-size: 10px; color: #999; margin: 4px 0; }
+        .chat-ai-closing { font-size: 10px; color: #ccc; margin-top: 6px; padding-top: 6px; border-top: 1px solid #2a2d3a; }
+
+        .chat-input-bar { display: flex; gap: 6px; padding: 10px 14px; border-top: 1px solid #2a2d3a; }
+        .chat-input-bar input { flex: 1; background: #252838; border: 1px solid #3a3d4a; border-radius: 10px; padding: 7px 12px; color: #ccc; font-size: 11px; outline: none; }
+        .chat-input-bar button { background: #c9a44a; border: none; border-radius: 10px; width: 30px; height: 30px; color: #0f1117; font-weight: 700; cursor: pointer; }
+
+        /* Q&A */
+        .qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+        @media (max-width: 900px) { .qa-grid { grid-template-columns: 1fr; } }
+        .qa-card { background: #1a1d28; border-radius: 12px; border: 1px solid #2a2d3a; padding: 16px 20px; }
+        .qa-q { font-size: 13px; font-weight: 600; color: #c9a44a; margin-bottom: 8px; }
+        .qa-a { font-size: 12px; color: #888; line-height: 1.6; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>ENA — Two-Screen Layout: Charts + Briefing</h1>
+    <p class="subtitle">Same sidebar, same chat — two tabs in the welcome bar. Chat can read and discuss the briefing data.</p>
+
+    <!-- ============================== -->
+    <!-- SCREEN 1: CHARTS TAB           -->
+    <!-- ============================== -->
+    <p class="screen-label">Screen 1 — Charts Tab (current view)</p>
+    <span class="view-label screen">Desktop — /charts with Charts tab active</span>
+
+    <div class="screen-frame">
+        <div class="app-header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="app-logo">Creare<span>Corp</span></div>
+                <div class="commodity-dropdown">Cu — Copper ▾</div>
+            </div>
+            <div class="app-header-right">
+                <div class="role-toggle">
+                    <button class="role-btn active">Trader</button>
+                    <button class="role-btn">Buyer</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-body">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-icon">◆</div>
+                <div class="sidebar-icon active">📈</div>
+                <div class="sidebar-icon">📰</div>
+                <div class="sidebar-icon" style="color: #333;">⚡</div>
+            </div>
+
+            <!-- Main -->
+            <div class="main-content">
+                <div class="welcome-bar">
+                    <div>
+                        <div class="welcome-text">Welcome Back!</div>
+                        <div class="welcome-date">LME Metals Monitor — 10/04/2026</div>
+                    </div>
+                    <div class="tab-toggle">
+                        <button class="tab-btn">▦ Overview</button>
+                        <button class="tab-btn active">📈 Single</button>
+                        <button class="tab-btn">📊 Compare</button>
+                        <button class="tab-btn">🎯 Briefing</button>
+                    </div>
+                </div>
+
+                <!-- Mini commodity tabs -->
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 8px; border: 1px solid #c9a44a; background: #252838; font-size: 11px; color: #fff;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #E87040;"></span> Cu — Copper</div>
+                    <div style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 8px; border: 1px solid #2a2d3a; font-size: 11px; color: #555;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #4CAF50;"></span> Ni — Nickel</div>
+                    <div style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 8px; border: 1px solid #2a2d3a; font-size: 11px; color: #555;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #2196F3;"></span> Al — Aluminium</div>
+                </div>
+
+                <!-- Chart -->
+                <div class="chart-placeholder">
+                    <div class="chart-header-row">
+                        <div class="chart-title">
+                            <div class="chart-title-icon" style="background: #E8704020; color: #E87040;">Cu</div>
+                            <span class="chart-title-name">Copper</span>
+                            <span class="chart-title-price">$12,147.02</span>
+                            <span style="font-size: 11px; color: #4caf50; padding: 2px 8px; background: rgba(76,175,80,0.1); border-radius: 4px;">+11.69%</span>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <div style="font-size: 10px; color: #4caf50; padding: 4px 10px; border: 1px solid #4caf5040; border-radius: 6px;">📈 Forecast 7D</div>
+                            <div class="tab-toggle" style="font-size: 10px;">
+                                <button class="tab-btn active" style="padding: 4px 10px; font-size: 10px;">Line</button>
+                                <button class="tab-btn" style="padding: 4px 10px; font-size: 10px;">Area</button>
+                                <button class="tab-btn" style="padding: 4px 10px; font-size: 10px;">Bar</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-area">
+                        <svg viewBox="0 0 600 150" preserveAspectRatio="none" style="width: 100%; height: 100%;">
+                            <path d="M0,120 C50,115 80,100 120,90 C160,80 200,85 240,70 C280,55 320,40 360,35 C400,30 440,45 480,40 C520,35 560,25 600,20" fill="none" stroke="#E87040" stroke-width="1.5"/>
+                            <path d="M600,20 C620,18 640,22 660,25" fill="none" stroke="#4caf50" stroke-width="1.5" stroke-dasharray="4,3"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Event feed mini -->
+                <div class="event-mini">
+                    <div class="event-mini-title">Event Feed</div>
+                    <div class="event-row">
+                        <span class="event-date">04/04/26</span>
+                        <span class="event-mat" style="background: #2196F320; color: #2196F3;">Al</span>
+                        <span class="event-headline">Restoration of Aluminum Production at EGA Plant...</span>
+                        <span class="event-sentiment" style="color: #ffc107;">● Neutral</span>
+                    </div>
+                    <div class="event-row">
+                        <span class="event-date">03/04/26</span>
+                        <span class="event-mat" style="background: #2196F320; color: #2196F3;">Al</span>
+                        <span class="event-headline">Industry dodges 'crushing' steel and aluminum tariff</span>
+                        <span class="event-sentiment" style="color: #ffc107;">● Neutral</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resize -->
+            <div class="resize-bar"></div>
+
+            <!-- Chat -->
+            <div class="chat-panel">
+                <div class="chat-box">
+                    <div class="chat-box-header">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span class="chat-box-title">Chat</span>
+                            <span class="chat-box-commodity">Copper</span>
+                        </div>
+                        <div class="chat-box-tools">
+                            <span style="font-size: 10px; padding: 3px 8px; border: 1px solid #3a3d4a; border-radius: 6px; color: #888;">🇬🇧 EN</span>
+                            <span class="chat-tool-btn">New</span>
+                            <span style="font-size: 9px; color: #555;">History (0)</span>
+                        </div>
+                    </div>
+                    <div class="chat-sticky">
+                        <div class="chat-sticky-label">Latest Copper News</div>
+                        <div class="chat-news-item"><span class="chat-news-rank">1</span><div><div class="chat-news-text">Trump's 50% Tariff Adjustment Sparks "Aluminum Squeeze"</div><div class="chat-news-meta">Cu Al · ● Neutral · 03/04</div></div></div>
+                        <div class="chat-news-item"><span class="chat-news-rank">2</span><div><div class="chat-news-text">Copper Supply Shock: Ivanhoe Mines Slashes Forecast</div><div class="chat-news-meta">Cu · ▼ Negative · 03/04</div></div></div>
+                        <div class="chat-news-item"><span class="chat-news-rank">3</span><div><div class="chat-news-text">Big Changes to Tariffs on Steel, Aluminum, Copper</div><div class="chat-news-meta">Cu Al · ● Neutral · 03/04</div></div></div>
+                    </div>
+                    <div class="chat-messages">
+                        <p style="text-align: center; font-size: 10px; color: #444; padding: 20px;">Ask about Copper prices, trends, or news...</p>
+                    </div>
+                    <div class="chat-input-bar">
+                        <input placeholder="Ask about Copper..." />
+                        <button>↑</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- SCREEN 2: BRIEFING TAB         -->
+    <!-- ============================== -->
+    <p class="screen-label">Screen 2 — Briefing Tab (single commodity, full width, no chat)</p>
+    <span class="view-label screen">Desktop — /charts with 🎯 Briefing tab active (Copper selected)</span>
+
+    <div class="screen-frame">
+        <div class="app-header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="app-logo">Creare<span>Corp</span></div>
+                <div class="commodity-dropdown">Cu — Copper ▾</div>
+            </div>
+            <div class="app-header-right">
+                <div class="role-toggle">
+                    <button class="role-btn active">Trader</button>
+                    <button class="role-btn">Buyer</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-body">
+            <!-- Same sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-icon">◆</div>
+                <div class="sidebar-icon active">📈</div>
+                <div class="sidebar-icon">📰</div>
+                <div class="sidebar-icon" style="color: #333;">⚡</div>
+            </div>
+
+            <!-- Main — Full width single commodity briefing -->
+            <div class="main-content">
+                <div class="welcome-bar">
+                    <div>
+                        <div class="welcome-text">Welcome Back!</div>
+                        <div class="welcome-date">LME Metals Monitor — 10/04/2026</div>
+                    </div>
+                    <div class="tab-toggle">
+                        <button class="tab-btn">▦ Overview</button>
+                        <button class="tab-btn">📈 Single</button>
+                        <button class="tab-btn">📊 Compare</button>
+                        <button class="tab-btn active">🎯 Briefing</button>
+                    </div>
+                </div>
+
+                <!-- Single Copper Briefing — full width -->
+                <div style="max-width: 900px;">
+                    <div class="briefing-card" style="border-color: #ef535040;">
+                        <!-- Header with commodity + score -->
+                        <div class="bc-header" style="padding: 16px 24px;">
+                            <div class="bc-commodity">
+                                <div class="bc-icon" style="background: #E8704020; color: #E87040; width: 40px; height: 40px; font-size: 15px;">Cu</div>
+                                <div>
+                                    <div class="bc-name" style="font-size: 18px;">Copper</div>
+                                    <div class="bc-date" style="font-size: 11px;">Analysis for Apr 2, 2026 · LME · USD/mt</div>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 24px; font-weight: 800; font-family: 'SF Mono', monospace; color: #fff;">$12,147.02</div>
+                                <div class="bc-score" style="color: #ef5350; font-size: 14px;">Final Score: -0.62</div>
+                            </div>
+                        </div>
+
+                        <!-- Badges -->
+                        <div class="bc-badges" style="padding: 10px 24px; gap: 6px;">
+                            <span class="bc-badge" style="background: rgba(239,83,80,0.15); color: #ef5350; font-size: 10px; padding: 4px 12px;">↓ Down</span>
+                            <span class="bc-badge" style="background: rgba(239,83,80,0.1); color: #ef5350; font-size: 10px; padding: 4px 12px;">⚠ Alert</span>
+                            <span class="bc-badge" style="background: rgba(239,83,80,0.1); color: #ef5350; font-size: 10px; padding: 4px 12px;">Negative</span>
+                            <span class="bc-badge" style="background: rgba(239,83,80,0.05); color: #888; font-size: 10px; padding: 4px 12px;">Vol: High</span>
+                            <span class="bc-badge" style="background: rgba(239,83,80,0.05); color: #888; font-size: 10px; padding: 4px 12px;">Forecast: Downward</span>
+                            <span class="bc-badge" style="background: rgba(239,83,80,0.05); color: #888; font-size: 10px; padding: 4px 12px;">14d ROC: -4.2%</span>
+                        </div>
+
+                        <!-- Recommendation Hero — bigger -->
+                        <div class="bc-rec-hero" style="padding: 20px 24px;">
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <div class="bc-rec-badge avoid" style="font-size: 22px; padding: 10px 28px;">Avoid</div>
+                                <div>
+                                    <div class="bc-rec-time" style="font-size: 13px;">No clear entry point — wait</div>
+                                    <div style="font-size: 10px; color: #555; margin-top: 2px;">Matrix: Down × Negative → Avoid · Flag: Alert → override confirmed</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 20px;">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 9px; color: #555; text-transform: uppercase; letter-spacing: 0.5px;">Price</div>
+                                    <div style="font-size: 18px; font-weight: 700; font-family: monospace; color: #ef5350;">-0.71</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 9px; color: #555; text-transform: uppercase; letter-spacing: 0.5px;">Sentiment</div>
+                                    <div style="font-size: 18px; font-weight: 700; font-family: monospace; color: #ef5350;">-0.48</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 9px; color: #555; text-transform: uppercase; letter-spacing: 0.5px;">Combined</div>
+                                    <div style="font-size: 18px; font-weight: 700; font-family: monospace; color: #ef5350;">-0.62</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Two-column body: Price Summary left, Market News right -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid #2a2d3a;">
+                            <!-- Left: Price Summary -->
+                            <div style="padding: 20px 24px; border-right: 1px solid #2a2d3a;">
+                                <div class="bc-section-label" style="font-size: 11px; margin-bottom: 10px;">Price Summary</div>
+                                <div style="font-size: 13px; line-height: 1.8; color: #ccc;">
+                                    Copper has lost 4.2% over the past two weeks and the pressure does not appear to be easing — the short-term outlook points to further decline. Price swings have been larger than usual, adding an extra layer of uncertainty for anyone considering a new position.
+                                </div>
+
+                                <!-- Score breakdown -->
+                                <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #1f2233;">
+                                    <div class="bc-section-label" style="font-size: 10px; margin-bottom: 8px;">Score Breakdown</div>
+                                    <div style="display: flex; gap: 16px;">
+                                        <div>
+                                            <div style="font-size: 9px; color: #555;">Engine A (ROC 20d)</div>
+                                            <div style="font-size: 13px; font-weight: 600; font-family: monospace; color: #ef5350;">-0.58</div>
+                                        </div>
+                                        <div>
+                                            <div style="font-size: 9px; color: #555;">Engine B (ARIMA)</div>
+                                            <div style="font-size: 13px; font-weight: 600; font-family: monospace; color: #ef5350;">-0.91</div>
+                                        </div>
+                                        <div>
+                                            <div style="font-size: 9px; color: #555;">Weighted (60/40)</div>
+                                            <div style="font-size: 13px; font-weight: 600; font-family: monospace; color: #ef5350;">-0.71</div>
+                                        </div>
+                                        <div>
+                                            <div style="font-size: 9px; color: #555;">GARCH Vol</div>
+                                            <div style="font-size: 13px; font-weight: 600; font-family: monospace; color: #ef5350;">High (p88)</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right: Market News -->
+                            <div style="padding: 20px 24px;">
+                                <div class="bc-section-label" style="font-size: 11px; margin-bottom: 10px;">Market News (30-day window, decay-weighted)</div>
+
+                                <div style="margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #1f2233;">
+                                    <div style="display: flex; align-items: start; gap: 8px;">
+                                        <span style="font-size: 16px; margin-top: 1px;">📉</span>
+                                        <div>
+                                            <div style="font-size: 12px; line-height: 1.5; color: #ccc;">China's factory activity contracted for the third month in a row, which directly reduces demand for copper in manufacturing and construction.</div>
+                                            <div style="display: flex; gap: 8px; margin-top: 4px; font-size: 10px; color: #555;">
+                                                <span>Bloomberg</span>
+                                                <span>12 Apr 2026</span>
+                                                <span style="color: #ef5350;">Negative (0.92)</span>
+                                                <span>Decay: 0.95</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style="margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #1f2233;">
+                                    <div style="display: flex; align-items: start; gap: 8px;">
+                                        <span style="font-size: 16px; margin-top: 1px;">📉</span>
+                                        <div>
+                                            <div style="font-size: 12px; line-height: 1.5; color: #ccc;">Copper stockpiles at major exchanges have reached their highest level in six months, a sign that supply is outpacing current demand.</div>
+                                            <div style="display: flex; gap: 8px; margin-top: 4px; font-size: 10px; color: #555;">
+                                                <span>Reuters</span>
+                                                <span>9 Apr 2026</span>
+                                                <span style="color: #ef5350;">Negative (0.87)</span>
+                                                <span>Decay: 0.86</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div style="display: flex; align-items: start; gap: 8px;">
+                                        <span style="font-size: 16px; margin-top: 1px;">➖</span>
+                                        <div>
+                                            <div style="font-size: 12px; line-height: 1.5; color: #ccc;">Mining output in Chile remains stable despite ongoing labour talks, so supply disruption is not a near-term factor.</div>
+                                            <div style="display: flex; gap: 8px; margin-top: 4px; font-size: 10px; color: #555;">
+                                                <span>WSJ</span>
+                                                <span>6 Apr 2026</span>
+                                                <span style="color: #ffc107;">Neutral (0.64)</span>
+                                                <span>Decay: 0.78</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Sentiment aggregate -->
+                                <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #1f2233;">
+                                    <div class="bc-section-label" style="font-size: 10px; margin-bottom: 8px;">Sentiment Aggregate (30d)</div>
+                                    <div style="display: flex; gap: 16px;">
+                                        <div>
+                                            <div style="font-size: 9px; color: #555;">Positive</div>
+                                            <div style="font-size: 13px; font-weight: 600; font-family: monospace; color: #4caf50;">2.41</div>
+                                        </div>
+                                        <div>
+                                            <div style="font-size: 9px; color: #555;">Neutral</div>
+                                            <div style="font-size: 13px; font-weight: 600; font-family: monospace; color: #ffc107;">4.12</div>
+                                        </div>
+                                        <div>
+                                            <div style="font-size: 9px; color: #555;">Negative</div>
+                                            <div style="font-size: 13px; font-weight: 600; font-family: monospace; color: #ef5350;">8.73</div>
+                                        </div>
+                                        <div>
+                                            <div style="font-size: 9px; color: #555;">Articles</div>
+                                            <div style="font-size: 13px; font-weight: 600; font-family: monospace; color: #888;">47</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Closing recommendation — full width -->
+                        <div class="bc-closing caution" style="padding: 16px 24px; font-size: 14px; line-height: 1.7;">
+                            Both the price trend and the news environment are pointing in the same direction right now. This is not the right moment to act on copper — it is worth waiting for demand signals to stabilise before revisiting.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hint -->
+                <p style="margin-top: 12px; font-size: 10px; color: #444;">Switch commodity in the header dropdown to see a different briefing. Use the chat on the Charts tab to ask questions about this analysis.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- Q&A                            -->
+    <!-- ============================== -->
+    <hr class="section-divider">
+    <span class="view-label qa">Design Decisions</span>
+
+    <div class="qa-grid">
+        <div class="qa-card">
+            <p class="qa-q">What stays the same between tabs?</p>
+            <p class="qa-a">Header, sidebar, resize handle, and chat panel are identical. Only the main content area changes. The chat adapts its sticky section — Charts tab shows latest news, Briefing tab shows all 3 recommendations as a summary.</p>
+        </div>
+        <div class="qa-card">
+            <p class="qa-q">Can the chat talk about the briefing?</p>
+            <p class="qa-a">Yes. When the Briefing tab is active, the chat's system prompt includes the computed briefing data (signals, scores, recommendations). The user can ask "Why avoid copper?" and get answers grounded in the actual Price Block + Sentiment Block data.</p>
+        </div>
+        <div class="qa-card">
+            <p class="qa-q">How are the 3 briefing cards computed?</p>
+            <p class="qa-a">Each card runs the full pipeline: ROC momentum + ARIMA forecast → Signal. FinBERT decay-weighted sentiment → Tier. Signal × Tier → Decision Matrix → Recommendation. Flag from volatility. LLM writes the narrative. All computed on page load.</p>
+        </div>
+        <div class="qa-card">
+            <p class="qa-q">What changes in chat between tabs?</p>
+            <p class="qa-a"><strong>Charts tab:</strong> sticky shows 3 latest news for selected commodity. Chat answers about prices and news. <strong>Briefing tab:</strong> sticky shows 3 commodity recommendations. Chat answers about the briefing analysis, comparisons between metals, timing advice.</p>
+        </div>
+    </div>
+</div>
+</body>
+</html>
