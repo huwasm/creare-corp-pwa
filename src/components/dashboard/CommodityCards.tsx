@@ -66,7 +66,7 @@ export function CommodityCards({ commodities, priceData, activeCommodity, onSele
               <span className="font-mono text-base font-bold text-white">
                 {signals.latest.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 <span className="ml-1 text-[11px] text-gray-600">$/MT</span>
-                <span className={`ml-1 text-xs ${signals.changePct >= 0 ? "text-green-400" : "text-red-400"}`}>
+                <span className={`ml-1 text-[21px] ${signals.changePct >= 0 ? "text-green-400" : "text-red-400"}`}>
                   {signals.changePct >= 0 ? "↗" : "↘"}
                 </span>
               </span>
