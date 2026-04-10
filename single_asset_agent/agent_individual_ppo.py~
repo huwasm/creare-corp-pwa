@@ -1,0 +1,276 @@
+import numpy as np
+import pandas as pd
+import gym
+from gym import spaces
+import torch
+from torch import nn
+from stable_baselines3 import PPO
+from sklearn.preprocessing import StandardScaler
+
+# =========================
+# LOAD DATA
+# =========================
+# df = pd.read_csv("prices_with_sentiment.csv")
+#df = pd.read_csv("commodity_outputs/aluminium_lme.csv")
+#df = pd.read_csv("commodity_outputs/copper_lme.csv")
+df = pd.read_csv("commodity_outputs/nickel_lme.csv")
+
+assert 'price' in df.columns and 'sentiment_score' in df.columns
+
+# Normalize features
+scaler = StandardScaler()
+df[['price', 'sentiment_score']] = scaler.fit_transform(
+    df[['price', 'sentiment_score']]
+)
+
+# =========================
+# TRADING ENVIRONMENT
+# =========================
+class TradingEnv(gym.Env):
+    def __init__(self, data, window_size=10, initial_balance=1000):
+        super().__init__()
+
+        self.data = data.reset_index(drop=True)
+        self.window_size = window_size
+        self.initial_balance = initial_balance
+
+        self.action_space = spaces.Discrete(3)
+        self.observation_space = spaces.Box(
+            low=-np.inf,
+            high=np.inf,
+            shape=(window_size, 2),
+            dtype=np.float32
+        )
+
+        self.reset()
+
+    def reset(self):
+        self.current_step = self.window_size
+        self.balance = self.initial_balance
+        self.position = 0
+        self.net_worth = self.initial_balance
+        self.max_steps = len(self.data) - 1
+
+        return self._get_observation()
+
+    def _get_observation(self):
+        return self.data.iloc[
+            self.current_step - self.window_size:self.current_step
+        ][['price', 'sentiment_score']].values.astype(np.float32)
+
+    def step(self, action):
+        prev_worth = self.net_worth
+        price = self.data.iloc[self.current_step]['price']
+
+        if action == 1:  # BUY
+            self.position += 1
+            self.balance -= price
+
+        elif action == 2:  # SELL
+            if self.position > 0:
+                self.position -= 1
+                self.balance += price
+
+        self.net_worth = self.balance + self.position * price
+        reward = self.net_worth - prev_worth
+
+        self.current_step += 1
+        done = self.current_step >= self.max_steps
+
+        return self._get_observation(), reward, done, {}
+
+# =========================
+# EPSILON-GREEDY POLICY
+# =========================
+class EpsilonGreedyPolicy:
+    def __init__(self, model, action_space, epsilon=0.05):
+        self.model = model
+        self.epsilon = epsilon
+        self.action_space = action_space
+
+    def predict(self, obs):
+        if np.random.rand() < self.epsilon:
+            return self.action_space.sample(), None
+        else:
+            action, _ = self.model.predict(obs, deterministic=False)
+            return action, self.get_action_probs(obs)
+
+    def get_action_probs(self, obs):
+        obs_tensor = torch.tensor(obs).float().unsqueeze(0)
+        dist = self.model.policy.get_distribution(obs_tensor)
+        probs = dist.distribution.probs.detach().cpu().numpy()[0]
+        return probs  # [hold, buy, sell]
+
+# =========================
+# HELPERS
+# =========================
+def compute_entropy(probs):
+    """
+    Normalized entropy in [0, 1].
+    0 = deterministic, 1 = maximally uncertain.
+    """
+    entropy = -np.sum(probs * np.log(probs + 1e-10))
+    return entropy / np.log(len(probs))
+
+def get_model_probs(model, obs):
+    obs_tensor = torch.tensor(obs).float().unsqueeze(0)
+    dist = model.policy.get_distribution(obs_tensor)
+    probs = dist.distribution.probs.detach().cpu().numpy()[0]
+    return probs
+
+def predict_full_dataset(model, data, window_size=10, initial_balance=1000, epsilon=0.05):
+    env = TradingEnv(data, window_size=window_size, initial_balance=initial_balance)
+    policy = EpsilonGreedyPolicy(model, env.action_space, epsilon=epsilon)
+
+    obs = env.reset()
+    done = False
+    records = []
+
+    while not done:
+        current_idx = env.current_step
+
+        action, probs = policy.predict(obs)
+        if probs is None:
+            probs = np.array([1/3, 1/3, 1/3])
+        entropy = compute_entropy(probs)
+        greedy_action = int(np.argmax(probs))
+
+        next_obs, reward, done, _ = env.step(action)
+
+        row = data.iloc[current_idx].to_dict()
+        row.update({
+            "action": int(action),
+            "greedy_action": int(greedy_action),
+            "prob_hold": probs[0],
+            "prob_buy": probs[1],
+            "prob_sell": probs[2],
+            "entropy": entropy,
+            "net_worth": env.net_worth,
+            "reward": reward
+        })
+
+        records.append(row)
+        obs = next_obs
+
+    return pd.DataFrame(records)
+
+# =========================
+# WALK-FORWARD SPLIT
+# =========================
+def walk_forward_split(data, n_splits=1):
+    split_size = len(data) // (n_splits + 1)
+    splits = []
+
+    for i in range(n_splits):
+        train_end = split_size * (i + 1)
+        test_end = split_size * (i + 2)
+
+        train = data[:train_end]
+        test = data[train_end:test_end]
+
+        splits.append((train, test))
+
+    return splits
+
+# =========================
+# PPO CONFIG
+# =========================
+policy_kwargs = dict(
+    net_arch=[dict(pi=[64, 64], vf=[64, 64])],
+    activation_fn=nn.Tanh
+)
+
+# =========================
+# TRAINING + EVALUATION
+# =========================
+splits = walk_forward_split(df)
+
+all_results = []
+
+for i, (train_data, test_data) in enumerate(splits):
+    print(f"\n=== WALK FORWARD ITERATION {i + 1} ===")
+
+    train_env = TradingEnv(train_data)
+    test_env = TradingEnv(test_data)
+
+    model = PPO(
+        "MlpPolicy",
+        train_env,
+        policy_kwargs=policy_kwargs,
+        verbose=0,
+        learning_rate=3e-4,
+        n_steps=256,
+        batch_size=64,
+        gamma=0.99
+    )
+
+    # Train
+    model.learn(total_timesteps=10000)
+
+    # =========================
+    # TEST SPLIT EVALUATION
+    # =========================
+    policy = EpsilonGreedyPolicy(model, test_env.action_space)
+
+    obs = test_env.reset()
+    done = False
+    records = []
+
+    while not done:
+        current_idx = test_env.current_step
+
+        action, probs = policy.predict(obs)
+        if probs is None:
+            probs = np.array([1/3, 1/3, 1/3])
+        entropy = compute_entropy(probs)
+        greedy_action = int(np.argmax(probs))
+
+        next_obs, reward, done, _ = test_env.step(action)
+
+        original_row = test_data.iloc[current_idx].to_dict()
+        original_row.update({
+            "action": int(action),                 # epsilon-greedy executed action
+            "greedy_action": int(greedy_action),  # argmax of probs
+            "prob_hold": probs[0],
+            "prob_buy": probs[1],
+            "prob_sell": probs[2],
+            "entropy": entropy,
+            "net_worth": test_env.net_worth,
+            "reward": reward
+        })
+
+        records.append(original_row)
+        obs = next_obs
+
+    final_worth = test_env.net_worth
+    print(f"Final Net Worth: {final_worth:.2f}")
+
+    eval_df = pd.DataFrame(records)
+    eval_filename = f"evaluation_split_{i + 1}.csv"
+    eval_df.to_csv(eval_filename, index=False)
+    print(f"Saved: {eval_filename}")
+
+    all_results.append(final_worth)
+
+    # =========================
+    # FULL DATASET PREDICTIONS
+    full_pred_df = predict_full_dataset(
+        model=model,
+        data=df,
+        window_size=train_env.window_size,
+        initial_balance=train_env.initial_balance,
+        epsilon=policy.epsilon
+    )
+
+    full_pred_filename = f"full_dataset_predictions_split_{i + 1}.csv"
+    full_pred_df.to_csv(full_pred_filename, index=False)
+    print(f"Saved: {full_pred_filename}")
+
+# =========================
+# SUMMARY
+# =========================
+print("\n=== WALK-FORWARD RESULTS ===")
+for i, res in enumerate(all_results):
+    print(f"Split {i + 1}: {res:.2f}")
+
+print(f"Average Net Worth: {np.mean(all_results):.2f}")
