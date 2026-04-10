@@ -85,7 +85,7 @@ export function CommodityCards({ commodities, priceData, activeCommodity, onSele
             </div>
 
             {/* Sparkline */}
-            <div className="my-3 h-[80px]">
+            <div className="mt-3 h-[80px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData}>
                   <defs>
@@ -107,6 +107,16 @@ export function CommodityCards({ commodities, priceData, activeCommodity, onSele
                 </AreaChart>
               </ResponsiveContainer>
             </div>
+            {/* Date range label */}
+            {prices.length >= 2 && (
+              <p className="mb-3 text-center font-mono text-[9px] text-gray-600">
+                {new Date(prices[0].date).toLocaleDateString("en-US", { month: "short", day: "2-digit" })}
+                {" – "}
+                {new Date(prices[prices.length - 1].date).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}
+                {" · "}
+                {prices.length}d
+              </p>
+            )}
 
             {/* Signals */}
             <div className="rounded-[10px] bg-[#161822] p-3">
