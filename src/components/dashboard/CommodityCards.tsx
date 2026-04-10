@@ -108,15 +108,20 @@ export function CommodityCards({ commodities, priceData, activeCommodity, onSele
               </ResponsiveContainer>
             </div>
             {/* Date range label */}
-            {prices.length >= 2 && (
-              <p className="mb-3 text-center font-mono text-[9px] text-gray-600">
-                {new Date(prices[0].date).toLocaleDateString("en-US", { month: "short", day: "2-digit" })}
-                {" – "}
-                {new Date(prices[prices.length - 1].date).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}
-                {" · "}
-                {prices.length}d
-              </p>
-            )}
+            {prices.length >= 2 && (() => {
+              const startDate = new Date(prices[0].date);
+              const endDate = new Date(prices[prices.length - 1].date);
+              const calendarDays = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+              return (
+                <p className="mb-3 text-center font-mono text-[9px] text-gray-600">
+                  {startDate.toLocaleDateString("en-US", { month: "short", day: "2-digit" })}
+                  {" – "}
+                  {endDate.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}
+                  {" · "}
+                  {calendarDays}d
+                </p>
+              );
+            })()}
 
             {/* Signals */}
             <div className="rounded-[10px] bg-[#161822] p-3">
