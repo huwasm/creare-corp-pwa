@@ -213,18 +213,18 @@ export function ChatPanel({ activeCommodity, commodityName, selectedDate, dateCl
               <span>{currentLang.code}</span>
             </button>
             {showLangPicker && (
-              <div className="absolute right-0 top-8 z-50 grid grid-cols-4 gap-1 rounded-lg border border-[#3a3d4a] bg-[#252838] p-2 shadow-xl">
+              <div className="absolute right-0 top-8 z-50 w-[160px] overflow-hidden rounded-lg border border-[#3a3d4a] bg-[#252838] shadow-xl">
                 {LANGUAGES.map((l) => (
                   <button
                     key={l.code}
                     onClick={() => { setLanguage(l.code); setShowLangPicker(false); }}
-                    className={`flex flex-col items-center gap-0.5 rounded-md px-2 py-1.5 transition-colors ${
-                      language === l.code ? "bg-[#c9a44a]/20 text-[#c9a44a]" : "text-gray-400 hover:bg-[#1f2233]"
+                    className={`flex w-full items-center gap-3 px-3 py-2 text-left transition-colors ${
+                      language === l.code ? "bg-[#c9a44a]/15 text-[#c9a44a]" : "text-gray-400 hover:bg-[#1f2233]"
                     }`}
-                    title={l.label}
                   >
                     <span className="text-base">{l.flag}</span>
-                    <span className="text-[8px] font-medium">{l.code}</span>
+                    <span className="text-xs">{l.label}</span>
+                    {language === l.code && <span className="ml-auto text-[10px]">✓</span>}
                   </button>
                 ))}
               </div>
